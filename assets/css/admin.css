@@ -1,0 +1,75 @@
+/**
+ * Hello Chatbot - Admin Styles
+ * Settings page styling
+ */
+
+.wrap h1 {
+    margin-bottom: 20px;
+}
+
+.form-table th {
+    width: 200px;
+}
+
+.form-table input[type="url"],
+.form-table input[type="password"],
+.form-table textarea {
+    width: 100%;
+    max-width: 500px;
+}
+
+.form-table textarea {
+    min-height: 80px;
+    resize: vertical;
+}
+
+#test-connection {
+    margin-top: 10px;
+}
+
+#test-result {
+    display: inline-block;
+    margin-left: 10px;
+    font-weight: 500;
+}
+
+#test-result.success {
+    color: #46b450;
+}
+
+#test-result.error {
+    color: #dc3232;
+}
+
+.description {
+    font-style: normal;
+    color: #666;
+}
+
+/* Checkbox styling */
+#chatbot_enabled {
+    margin-right: 5px;
+}
+
+/* Submit button */
+.submit {
+    margin-top: 20px;
+}
+
+/* Loading animation */
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+.loading:after {
+    content: "";
+    display: inline-block;
+    width: 14px;
+    height: 14px;
+    margin-left: 8px;
+    border: 2px solid #f3f3f3;
+    border-top: 2px solid #333;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
