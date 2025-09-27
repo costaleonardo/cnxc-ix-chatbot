@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Chatbot Persistence - Page 2</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            padding: 40px;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        h1 {
+            color: #10b981;
+        }
+        .navigation {
+            margin: 20px 0;
+            padding: 20px;
+            background: #f8fafc;
+            border-radius: 8px;
+        }
+        .navigation a {
+            display: inline-block;
+            padding: 10px 20px;
+            background: #10b981;
+            color: white;
+            text-decoration: none;
+            border-radius: 4px;
+            margin-right: 10px;
+        }
+        .navigation a:hover {
+            background: #059669;
+        }
+        .status {
+            background: #fef3c7;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+        .status h2 {
+            margin-top: 0;
+            color: #92400e;
+        }
+    </style>
+</head>
+<body>
+    <h1>Test Chatbot Widget Persistence - Page 2</h1>
+    
+    <div class="status">
+        <h2>Status Check:</h2>
+        <p>If you navigated here from Page 1 with the chatbot open, it should still be open now!</p>
+        <p>The conversation history should also be preserved.</p>
+    </div>
+    
+    <div class="navigation">
+        <h3>Navigation:</h3>
+        <a href="test-persistence.html">Go to Page 1</a>
+        <a href="#" onclick="checkWidgetState(); return false;">Check Widget State</a>
+        <a href="#" onclick="localStorage.clear(); alert('LocalStorage cleared! Refresh the page.'); return false;">Clear Storage</a>
+    </div>
+    
+    <div>
+        <h2>Page Content</h2>
+        <p>This is test page 2. You've successfully navigated to a different page.</p>
+        <p>The chatbot widget should have maintained its previous state (open or closed).</p>
+        <p>Try sending another message to confirm the conversation continues seamlessly.</p>
+    </div>
+
+    <!-- Mock WordPress environment for testing -->
+    <script>
+        // Simulate WordPress environment
+        window.helloChatbot = {
+            ajaxUrl: '/wp-admin/admin-ajax.php',
+            nonce: 'test_nonce_12345',
+            position: 'bottom-right',
+            welcomeMessage: 'Welcome! This is a test of the persistent state feature.',
+            strings: {
+                thinking: 'Thinking...',
+                error: 'Sorry, an error occurred.',
+                offline: 'Chat is currently unavailable.',
+                typeMessage: 'Type a message...',
+                send: 'Send',
+                newChat: 'New Chat',
+                references: 'References',
+                chatHistory: 'Chat History',
+                concentrixBot: 'Concentrix Bot'
+            }
+        };
+        
+        function checkWidgetState() {
+            const widgetState = localStorage.getItem('helloChatbotWidgetState');
+            const sessions = localStorage.getItem('helloChatbotSessions');
+            
+            let message = 'Widget State Check:\n\n';
+            
+            if (widgetState) {
+                const state = JSON.parse(widgetState);
+                message += `Widget is: ${state.isOpen ? 'OPEN' : 'CLOSED'}\n`;
+                message += `Last updated: ${new Date(state.timestamp).toLocaleString()}\n\n`;
+            } else {
+                message += 'No widget state saved.\n\n';
+            }
+            
+            if (sessions) {
+                const sessionData = JSON.parse(sessions);
+                const sessionCount = Object.keys(sessionData.sessions).length;
+                message += `Sessions stored: ${sessionCount}\n`;
+                message += `Active session: ${sessionData.activeSessionId ? 'Yes' : 'No'}`;
+            } else {
+                message += 'No session data saved.';
+            }
+            
+            alert(message);
+        }
+    </script>
+    
+    <!-- Widget Container -->
+    <div id="hello-chatbot-widget" data-position="bottom-right"></div>
+    
+    <!-- Include the chatbot scripts -->
+    <link rel="stylesheet" href="assets/css/chatbot.css">
+    <script src="assets/js/chatbot.js"></script>
+</body>
+</html>
