@@ -12,18 +12,22 @@
     class ChatbotWidget {
         constructor(config) {
             this.config = config;
+            this.sessionManager = new SessionManager();
+            
+            // Load saved widget state
+            const savedWidgetState = this.sessionManager.getWidgetState();
+            
             this.state = {
-                isOpen: false,
+                isOpen: savedWidgetState.isOpen || false,
                 isLoading: false,
                 messages: [],
                 currentSession: null,
                 sessions: [],
                 showHistory: false,
-                showTooltip: true
+                showTooltip: !savedWidgetState.isOpen // Don't show tooltip if widget should auto-open
             };
             
             this.elements = {};
-            this.sessionManager = new SessionManager();
             
             this.init();
         }
@@ -34,6 +38,15 @@
             this.render();
             this.attachEventListeners();
             this.showWelcomeMessage();
+            
+            // Auto-open widget if it was previously open
+            if (this.state.isOpen) {
+                // Small delay to ensure DOM is ready
+                setTimeout(() => {
+                    this.elements.window?.classList.add('open');
+                    this.scrollToBottom();
+                }, 100);
+            }
         }
         
         loadSession() {
@@ -133,19 +146,19 @@
                             </button>
                         </form>
                     </div>
-                </div>
-                
-                <!-- History Sidebar -->
-                <div id="chatbot-history" class="chatbot-history ${this.state.showHistory ? 'open' : ''}">
-                    <div class="chatbot-history-header">
-                        <h3>Chat History</h3>
-                        <button id="chatbot-history-close" class="chatbot-history-close">×</button>
-                    </div>
-                    <button id="chatbot-new-chat" class="chatbot-new-chat-btn">
-                        + ${this.config.strings.newChat}
-                    </button>
-                    <div class="chatbot-history-list">
-                        ${this.buildHistoryHTML()}
+                    
+                    <!-- History Sidebar (inside chat window) -->
+                    <div id="chatbot-history" class="chatbot-history ${this.state.showHistory ? 'open' : ''}">
+                        <div class="chatbot-history-header">
+                            <h3>Chat History</h3>
+                            <button id="chatbot-history-close" class="chatbot-history-close">×</button>
+                        </div>
+                        <button id="chatbot-new-chat" class="chatbot-new-chat-btn">
+                            + ${this.config.strings.newChat}
+                        </button>
+                        <div class="chatbot-history-list">
+                            ${this.buildHistoryHTML()}
+                        </div>
                     </div>
                 </div>
             `;
@@ -331,6 +344,9 @@
             this.state.isOpen = !this.state.isOpen;
             this.elements.window.classList.toggle('open', this.state.isOpen);
             
+            // Save the widget state
+            this.sessionManager.saveWidgetState(this.state.isOpen);
+            
             if (this.state.isOpen) {
                 this.state.showTooltip = false;
                 this.elements.tooltip?.classList.remove('show');
@@ -342,6 +358,9 @@
         closeChat() {
             this.state.isOpen = false;
             this.elements.window.classList.remove('open');
+            
+            // Save the closed state
+            this.sessionManager.saveWidgetState(false);
         }
         
         toggleHistory() {
@@ -571,6 +590,7 @@
     class SessionManager {
         constructor() {
             this.STORAGE_KEY = 'helloChatbotSessions';
+            this.WIDGET_STATE_KEY = 'helloChatbotWidgetState';
             this.MAX_SESSIONS = 50;
         }
         
@@ -579,6 +599,36 @@
             const data = this.getSessionsData();
             if (!data.activeSessionId || !data.sessions[data.activeSessionId]) {
                 this.createSession();
+            }
+        }
+        
+        // Widget state persistence methods
+        getWidgetState() {
+            try {
+                const state = localStorage.getItem(this.WIDGET_STATE_KEY);
+                if (state) {
+                    const parsed = JSON.parse(state);
+                    // Check if state is not too old (e.g., within last 24 hours)
+                    const hoursSinceUpdate = (Date.now() - parsed.timestamp) / (1000 * 60 * 60);
+                    if (hoursSinceUpdate < 24) {
+                        return parsed;
+                    }
+                }
+            } catch (e) {
+                console.warn('Could not parse widget state:', e);
+            }
+            return { isOpen: false, timestamp: Date.now() };
+        }
+        
+        saveWidgetState(isOpen) {
+            try {
+                const state = {
+                    isOpen: isOpen,
+                    timestamp: Date.now()
+                };
+                localStorage.setItem(this.WIDGET_STATE_KEY, JSON.stringify(state));
+            } catch (e) {
+                console.error('Could not save widget state:', e);
             }
         }
         
