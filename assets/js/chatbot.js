@@ -28,6 +28,7 @@
             };
             
             this.elements = {};
+            this.messageDOMCache = new Map(); // Cache message DOM elements per session
             
             this.init();
         }
@@ -368,14 +369,8 @@
                 this.elements.tooltip.classList.remove('show');
             });
             
-            // Session card clicks (in list view)
+            // Action button clicks
             document.addEventListener('click', (e) => {
-                if (e.target.closest('.chatbot-session-card')) {
-                    const sessionId = e.target.closest('.chatbot-session-card').dataset.sessionId;
-                    this.switchToChatView(sessionId);
-                }
-                
-                // Action button clicks
                 if (e.target.classList.contains('chatbot-action-btn')) {
                     e.preventDefault();
                     const button = e.target;
@@ -462,17 +457,80 @@
             }
         }
         
+        /**
+         * Get or create cached DOM for messages of a session
+         */
+        getCachedMessagesDOM(sessionId) {
+            if (!this.messageDOMCache.has(sessionId)) {
+                const fragment = document.createDocumentFragment();
+                const messages = this.state.messages || [];
+                
+                messages.forEach(msg => {
+                    const messageElement = document.createElement('div');
+                    messageElement.innerHTML = this.buildMessageHTML(msg);
+                    fragment.appendChild(messageElement.firstElementChild);
+                });
+                
+                this.messageDOMCache.set(sessionId, fragment);
+            }
+            return this.messageDOMCache.get(sessionId);
+        }
+        
+        /**
+         * Clear cache for a specific session
+         */
+        clearMessageCache(sessionId) {
+            this.messageDOMCache.delete(sessionId);
+        }
+        
         switchSession(sessionId) {
             const session = this.sessionManager.setActiveSession(sessionId);
             if (session) {
+                // Store previous session ID for comparison
+                const previousSessionId = this.state.currentSession?.id;
+                
                 this.state.currentSession = session;
                 this.state.messages = session.messages || [];
                 
                 // Ensure we're in chat view when switching sessions
                 if (this.state.viewMode === 'list') {
                     this.switchToChatView();
-                } else {
-                    this.updateMessagesUI();
+                } else if (this.elements.messages) {
+                    // Only update messages if we're switching to a different session
+                    if (previousSessionId !== sessionId) {
+                        // Optimized message swapping without flickering
+                        const messagesContainer = this.elements.messages;
+                        
+                        // Create a document fragment with all messages
+                        const fragment = document.createDocumentFragment();
+                        const messages = this.state.messages || [];
+                        
+                        if (messages.length === 0) {
+                            // Just clear if no messages
+                            messagesContainer.innerHTML = '';
+                        } else {
+                            // Build messages without flickering
+                            messages.forEach(msg => {
+                                // Check if message element already exists in DOM
+                                const existingMsg = messagesContainer.querySelector(`[data-message-id="${msg.id}"]`);
+                                if (existingMsg) {
+                                    // Reuse existing element
+                                    fragment.appendChild(existingMsg);
+                                } else {
+                                    // Create new element
+                                    const messageElement = document.createElement('div');
+                                    messageElement.innerHTML = this.buildMessageHTML(msg);
+                                    fragment.appendChild(messageElement.firstElementChild);
+                                }
+                            });
+                            
+                            // Single DOM update to minimize reflow
+                            messagesContainer.innerHTML = '';
+                            messagesContainer.appendChild(fragment);
+                        }
+                        
+                        this.scrollToBottom();
+                    }
                 }
             }
         }
@@ -501,7 +559,7 @@
             };
             
             this.addMessage(userMsg);
-            this.appendMessage(userMsg, true);
+            this.appendMessage(userMsg);
             
             // Show loading indicator smoothly
             this.state.isLoading = true;
@@ -532,12 +590,8 @@
                     };
                     
                     this.addMessage(assistantMsg);
-                    
-                    // Hide loading and show response smoothly
                     this.setLoadingIndicator(false);
-                    setTimeout(() => {
-                        this.appendMessage(assistantMsg, true);
-                    }, 250);
+                    this.appendMessage(assistantMsg);
                 } else {
                     throw new Error(data.data || 'Request failed');
                 }
@@ -552,12 +606,8 @@
                 };
                 
                 this.addMessage(errorMsg);
-                
-                // Hide loading and show error smoothly
                 this.setLoadingIndicator(false);
-                setTimeout(() => {
-                    this.appendMessage(errorMsg, true);
-                }, 250);
+                this.appendMessage(errorMsg);
             } finally {
                 this.state.isLoading = false;
             }
@@ -568,6 +618,9 @@
             
             // Update session
             if (this.state.currentSession) {
+                // Clear cache for this session since we're adding a new message
+                this.clearMessageCache(this.state.currentSession.id);
+                
                 this.sessionManager.updateSession(this.state.currentSession.id, {
                     messages: this.state.messages
                 });
@@ -590,32 +643,16 @@
         }
         
         /**
-         * Append a single message without rebuilding entire messages area
-         * Eliminates flickering by only adding new content
+         * Append a single message instantly without any animations
          */
-        appendMessage(message, animate = true) {
+        appendMessage(message) {
             const messageElement = document.createElement('div');
             messageElement.innerHTML = this.buildMessageHTML(message);
             const messageNode = messageElement.firstElementChild;
             
-            if (animate) {
-                // Start invisible for smooth animation
-                messageNode.style.opacity = '0';
-                messageNode.style.transform = 'translateY(10px)';
-            }
-            
             this.elements.messages.appendChild(messageNode);
-            
-            if (animate) {
-                // Trigger animation after DOM insertion
-                requestAnimationFrame(() => {
-                    messageNode.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
-                    messageNode.style.opacity = '1';
-                    messageNode.style.transform = 'translateY(0)';
-                });
-            }
-            
             this.scrollToBottom();
+            
             return messageNode;
         }
         
@@ -652,7 +689,7 @@
         }
         
         /**
-         * Show/hide loading indicator without rebuilding messages
+         * Show/hide loading indicator instantly
          */
         setLoadingIndicator(show) {
             const existingLoader = this.elements.messages.querySelector('.chatbot-thinking');
@@ -661,23 +698,10 @@
                 const loaderElement = document.createElement('div');
                 loaderElement.innerHTML = this.buildThinkingHTML();
                 const loaderNode = loaderElement.firstElementChild;
-                loaderNode.style.opacity = '0';
                 this.elements.messages.appendChild(loaderNode);
-                
-                requestAnimationFrame(() => {
-                    loaderNode.style.transition = 'opacity 0.2s ease';
-                    loaderNode.style.opacity = '1';
-                });
-                
                 this.scrollToBottom();
             } else if (!show && existingLoader) {
-                existingLoader.style.transition = 'opacity 0.2s ease';
-                existingLoader.style.opacity = '0';
-                setTimeout(() => {
-                    if (existingLoader.parentNode) {
-                        existingLoader.parentNode.removeChild(existingLoader);
-                    }
-                }, 200);
+                existingLoader.remove();
             }
         }
         
@@ -692,27 +716,169 @@
             
             // Add transitioning class for smooth fade
             container.classList.add('transitioning');
-            container.style.opacity = '0.7';
+            container.style.opacity = '0.95';
             
+            // Shorter delay for quicker transitions
             setTimeout(() => {
                 if (newViewMode === 'chat' && sessionId && sessionId !== this.state.currentSession?.id) {
                     this.switchSession(sessionId);
                 }
                 
                 this.state.viewMode = newViewMode;
-                this.render();
-                this.attachEventListeners();
                 
-                if (newViewMode === 'chat') {
+                // Remove existing content areas
+                const existingMessages = container.querySelector('#chatbot-messages');
+                const existingList = container.querySelector('#chatbot-list-view');
+                const existingInput = container.querySelector('.chatbot-input-area');
+                
+                if (newViewMode === 'list') {
+                    // Remove chat view elements
+                    if (existingMessages) existingMessages.remove();
+                    if (existingInput) existingInput.remove();
+                    
+                    // Add list view if not present
+                    if (!existingList) {
+                        const listHTML = `
+                            <div id="chatbot-list-view" class="chatbot-list-view">
+                                <button id="chatbot-new-chat" class="chatbot-new-chat-btn">
+                                    + ${this.config.strings.newChat || 'New Chat'}
+                                </button>
+                                <div class="chatbot-sessions-grid">
+                                    ${this.buildSessionsListHTML()}
+                                </div>
+                            </div>
+                        `;
+                        container.querySelector('.chatbot-header').insertAdjacentHTML('afterend', listHTML);
+                        
+                        // Reattach event listeners
+                        this.attachSessionListeners();
+                        document.getElementById('chatbot-new-chat')?.addEventListener('click', () => {
+                            const session = this.sessionManager.createSession();
+                            this.state.currentSession = session;
+                            this.state.sessions = this.sessionManager.getAllSessions();
+                            this.state.messages = [];
+                            this.showWelcomeMessage();
+                            this.switchToChatView();
+                        });
+                    }
+                } else if (newViewMode === 'chat') {
+                    // Remove list view
+                    if (existingList) existingList.remove();
+                    
+                    // Add chat view elements if not present
+                    if (!existingMessages) {
+                        const messagesHTML = `
+                            <div id="chatbot-messages" class="chatbot-messages">
+                                ${this.buildMessagesHTML()}
+                            </div>
+                        `;
+                        container.querySelector('.chatbot-header').insertAdjacentHTML('afterend', messagesHTML);
+                    }
+                    
+                    if (!existingInput) {
+                        const inputHTML = `
+                            <div class="chatbot-input-area">
+                                <form id="chatbot-form" class="chatbot-form">
+                                    <textarea 
+                                        id="chatbot-input" 
+                                        class="chatbot-input" 
+                                        placeholder="${this.config.strings.typeMessage}"
+                                        rows="1"
+                                    ></textarea>
+                                    <button type="submit" class="chatbot-send-btn" aria-label="Send">
+                                        ${this.getSendIcon()}
+                                    </button>
+                                </form>
+                            </div>
+                        `;
+                        container.insertAdjacentHTML('beforeend', inputHTML);
+                    }
+                    
+                    // Re-cache elements and attach listeners
+                    this.elements.messages = document.getElementById('chatbot-messages');
+                    this.elements.form = document.getElementById('chatbot-form');
+                    this.elements.input = document.getElementById('chatbot-input');
+                    
+                    // Reattach form listeners
+                    this.elements.form?.addEventListener('submit', (e) => this.handleSubmit(e));
+                    this.elements.input?.addEventListener('input', () => this.autoResizeInput());
+                    this.elements.input?.addEventListener('keydown', (e) => {
+                        if (e.key === 'Enter' && !e.shiftKey) {
+                            e.preventDefault();
+                            this.handleSubmit(e);
+                        }
+                    });
+                    
                     this.scrollToBottom();
                 }
+                
+                // Update header
+                const title = container.querySelector('.chatbot-title h3');
+                if (title) {
+                    title.textContent = newViewMode === 'list' ? 'Chat History' : 'concentrix Bot';
+                }
+                
+                // Update header buttons
+                const backBtn = container.querySelector('.chatbot-back-btn');
+                const controls = container.querySelector('.chatbot-controls');
+                
+                if (newViewMode === 'list') {
+                    if (backBtn) backBtn.remove();
+                    // Only show minimize button in list view
+                    controls.innerHTML = `
+                        <button id="chatbot-minimize-btn" class="chatbot-control-btn" aria-label="Minimize">
+                            ${this.getMinimizeIcon()}
+                        </button>
+                    `;
+                } else {
+                    // Add back button if not present and there are sessions
+                    if (!backBtn && this.state.sessions.length > 0) {
+                        const backBtnHTML = `
+                            <button id="chatbot-back-btn" class="chatbot-back-btn" aria-label="View all chats">
+                                ${this.getBackIcon()}
+                            </button>
+                        `;
+                        container.querySelector('.chatbot-header').insertAdjacentHTML('afterbegin', backBtnHTML);
+                    }
+                    // Add control buttons for chat view
+                    controls.innerHTML = `
+                        <button id="chatbot-info-btn" class="chatbot-control-btn" aria-label="Info">
+                            ${this.getInfoIcon()}
+                        </button>
+                        <button id="chatbot-refresh-btn" class="chatbot-control-btn" aria-label="New chat">
+                            ${this.getRefreshIcon()}
+                        </button>
+                        <button id="chatbot-minimize-btn" class="chatbot-control-btn" aria-label="Minimize">
+                            ${this.getMinimizeIcon()}
+                        </button>
+                    `;
+                }
+                
+                // Reattach header button listeners
+                document.getElementById('chatbot-minimize-btn')?.addEventListener('click', () => this.closeChat());
+                document.getElementById('chatbot-back-btn')?.addEventListener('click', () => this.switchToListView());
+                document.getElementById('chatbot-info-btn')?.addEventListener('click', () => this.showInfo());
+                document.getElementById('chatbot-refresh-btn')?.addEventListener('click', () => this.startNewChat());
                 
                 // Complete transition
                 container.style.opacity = '1';
                 setTimeout(() => {
                     container.classList.remove('transitioning');
-                }, 200);
-            }, 150);
+                }, 50);
+            }, 30);
+        }
+        
+        /**
+         * Attach event listeners for session list items
+         */
+        attachSessionListeners() {
+            const sessionCards = document.querySelectorAll('.chatbot-session-card');
+            sessionCards.forEach(card => {
+                card.addEventListener('click', (e) => {
+                    const sessionId = card.dataset.sessionId;
+                    this.switchToChatView(sessionId);
+                });
+            });
         }
         
         switchToListView() {
@@ -724,9 +890,9 @@
         }
         
         scrollToBottom() {
-            setTimeout(() => {
+            if (this.elements.messages) {
                 this.elements.messages.scrollTop = this.elements.messages.scrollHeight;
-            }, 100);
+            }
         }
         
         autoResizeInput() {
