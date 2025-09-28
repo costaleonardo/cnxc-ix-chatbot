@@ -183,7 +183,7 @@
             const sender = isUser ? 'You' : '[Assistant name]';
             
             let html = `
-                <div class="chatbot-message chatbot-message-${message.role}">
+                <div class="chatbot-message chatbot-message-${message.role}" data-message-id="${message.id}">
                     <div class="chatbot-message-avatar">${avatar}</div>
                     <div class="chatbot-message-content">
                         <div class="chatbot-message-header">
@@ -369,10 +369,35 @@
                 // Action button clicks
                 if (e.target.classList.contains('chatbot-action-btn')) {
                     e.preventDefault();
-                    const action = e.target.textContent.trim();
+                    const button = e.target;
+                    const action = button.textContent.trim();
+                    
+                    // Provide immediate visual feedback
+                    this.setActionButtonLoading(button, true);
+                    
+                    // Disable other action buttons temporarily
+                    const allActionButtons = document.querySelectorAll('.chatbot-action-btn');
+                    allActionButtons.forEach(btn => {
+                        if (btn !== button) {
+                            btn.style.opacity = '0.4';
+                            btn.disabled = true;
+                        }
+                    });
+                    
                     // Send the action text as a message
                     this.elements.input.value = action;
-                    this.handleSubmit(e);
+                    
+                    // Use a slight delay to show the loading feedback
+                    setTimeout(async () => {
+                        await this.handleSubmit(e);
+                        
+                        // Re-enable all action buttons after processing
+                        allActionButtons.forEach(btn => {
+                            btn.style.opacity = '';
+                            btn.disabled = false;
+                        });
+                        this.setActionButtonLoading(button, false);
+                    }, 100);
                 }
                 
                 // References toggle
@@ -458,7 +483,7 @@
         }
         
         async sendMessage(text) {
-            // Add user message
+            // Add user message with smooth animation
             const userMsg = {
                 id: 'msg-' + Date.now(),
                 role: 'user',
@@ -467,8 +492,11 @@
             };
             
             this.addMessage(userMsg);
+            this.appendMessage(userMsg, true);
+            
+            // Show loading indicator smoothly
             this.state.isLoading = true;
-            this.updateMessagesUI();
+            this.setLoadingIndicator(true);
             
             try {
                 // Send to server
@@ -495,6 +523,12 @@
                     };
                     
                     this.addMessage(assistantMsg);
+                    
+                    // Hide loading and show response smoothly
+                    this.setLoadingIndicator(false);
+                    setTimeout(() => {
+                        this.appendMessage(assistantMsg, true);
+                    }, 250);
                 } else {
                     throw new Error(data.data || 'Request failed');
                 }
@@ -509,9 +543,14 @@
                 };
                 
                 this.addMessage(errorMsg);
+                
+                // Hide loading and show error smoothly
+                this.setLoadingIndicator(false);
+                setTimeout(() => {
+                    this.appendMessage(errorMsg, true);
+                }, 250);
             } finally {
                 this.state.isLoading = false;
-                this.updateMessagesUI();
             }
         }
         
@@ -534,24 +573,145 @@
         }
         
         updateMessagesUI() {
-            this.elements.messages.innerHTML = this.buildMessagesHTML();
+            // Only use full rebuild when necessary (initial load)
+            if (!this.elements.messages.hasChildNodes()) {
+                this.elements.messages.innerHTML = this.buildMessagesHTML();
+            }
             this.scrollToBottom();
+        }
+        
+        /**
+         * Append a single message without rebuilding entire messages area
+         * Eliminates flickering by only adding new content
+         */
+        appendMessage(message, animate = true) {
+            const messageElement = document.createElement('div');
+            messageElement.innerHTML = this.buildMessageHTML(message);
+            const messageNode = messageElement.firstElementChild;
+            
+            if (animate) {
+                // Start invisible for smooth animation
+                messageNode.style.opacity = '0';
+                messageNode.style.transform = 'translateY(10px)';
+            }
+            
+            this.elements.messages.appendChild(messageNode);
+            
+            if (animate) {
+                // Trigger animation after DOM insertion
+                requestAnimationFrame(() => {
+                    messageNode.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
+                    messageNode.style.opacity = '1';
+                    messageNode.style.transform = 'translateY(0)';
+                });
+            }
+            
+            this.scrollToBottom();
+            return messageNode;
+        }
+        
+        /**
+         * Update a specific message element without rebuilding
+         */
+        updateMessageElement(messageId, updatedMessage) {
+            const messageElement = this.elements.messages.querySelector(`[data-message-id="${messageId}"]`);
+            if (messageElement) {
+                const newElement = document.createElement('div');
+                newElement.innerHTML = this.buildMessageHTML(updatedMessage);
+                const newMessageNode = newElement.firstElementChild;
+                
+                messageElement.parentNode.replaceChild(newMessageNode, messageElement);
+                return newMessageNode;
+            }
+        }
+        
+        /**
+         * Set loading state for action buttons with immediate visual feedback
+         */
+        setActionButtonLoading(button, isLoading) {
+            if (isLoading) {
+                button.classList.add('loading');
+                button.disabled = true;
+                button.style.opacity = '0.6';
+                button.style.transform = 'scale(0.98)';
+            } else {
+                button.classList.remove('loading');
+                button.disabled = false;
+                button.style.opacity = '';
+                button.style.transform = '';
+            }
+        }
+        
+        /**
+         * Show/hide loading indicator without rebuilding messages
+         */
+        setLoadingIndicator(show) {
+            const existingLoader = this.elements.messages.querySelector('.chatbot-thinking');
+            
+            if (show && !existingLoader) {
+                const loaderElement = document.createElement('div');
+                loaderElement.innerHTML = this.buildThinkingHTML();
+                const loaderNode = loaderElement.firstElementChild;
+                loaderNode.style.opacity = '0';
+                this.elements.messages.appendChild(loaderNode);
+                
+                requestAnimationFrame(() => {
+                    loaderNode.style.transition = 'opacity 0.2s ease';
+                    loaderNode.style.opacity = '1';
+                });
+                
+                this.scrollToBottom();
+            } else if (!show && existingLoader) {
+                existingLoader.style.transition = 'opacity 0.2s ease';
+                existingLoader.style.opacity = '0';
+                setTimeout(() => {
+                    if (existingLoader.parentNode) {
+                        existingLoader.parentNode.removeChild(existingLoader);
+                    }
+                }, 200);
+            }
+        }
+        
+        /**
+         * Smooth transition between views without jarring rebuilds
+         */
+        transitionToView(newViewMode, sessionId = null) {
+            if (this.state.viewMode === newViewMode) return;
+            
+            const container = this.elements.window;
+            if (!container) return;
+            
+            // Add transitioning class for smooth fade
+            container.classList.add('transitioning');
+            container.style.opacity = '0.7';
+            
+            setTimeout(() => {
+                if (newViewMode === 'chat' && sessionId && sessionId !== this.state.currentSession?.id) {
+                    this.switchSession(sessionId);
+                }
+                
+                this.state.viewMode = newViewMode;
+                this.render();
+                this.attachEventListeners();
+                
+                if (newViewMode === 'chat') {
+                    this.scrollToBottom();
+                }
+                
+                // Complete transition
+                container.style.opacity = '1';
+                setTimeout(() => {
+                    container.classList.remove('transitioning');
+                }, 200);
+            }, 150);
         }
         
         switchToListView() {
-            this.state.viewMode = 'list';
-            this.render();
-            this.attachEventListeners();
+            this.transitionToView('list');
         }
         
         switchToChatView(sessionId = null) {
-            if (sessionId && sessionId !== this.state.currentSession?.id) {
-                this.switchSession(sessionId);
-            }
-            this.state.viewMode = 'chat';
-            this.render();
-            this.attachEventListeners();
-            this.scrollToBottom();
+            this.transitionToView('chat', sessionId);
         }
         
         scrollToBottom() {
