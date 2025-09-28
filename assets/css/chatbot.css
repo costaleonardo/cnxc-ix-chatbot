@@ -59,7 +59,7 @@
     justify-content: center;
     cursor: pointer;
     box-shadow: var(--chatbot-shadow);
-    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
     will-change: transform, background-color, box-shadow;
     backface-visibility: hidden;
     -webkit-font-smoothing: antialiased;
@@ -84,7 +84,7 @@
     border: 1px solid var(--chatbot-border);
     opacity: 0;
     visibility: hidden;
-    transition: all 0.3s ease;
+    transition: all 0.2s ease;
 }
 
 .chatbot-tooltip.show {
@@ -142,13 +142,13 @@
     opacity: 0;
     visibility: hidden;
     transform: scale(0.95) translateY(10px);
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
     will-change: transform, opacity;
 }
 
 /* Smooth transitioning state for view changes */
 .chatbot-window.transitioning {
-    transition: opacity 0.2s ease;
+    transition: opacity 0.1s ease;
 }
 
 .chatbot-window.open {
@@ -244,6 +244,7 @@
     transform: translateZ(0);
     backface-visibility: hidden;
     -webkit-overflow-scrolling: touch;
+    contain: layout style paint;
 }
 
 .chatbot-messages::-webkit-scrollbar {
@@ -267,29 +268,6 @@
 .chatbot-message {
     display: flex;
     gap: 12px;
-    animation: messageSlide 0.3s ease;
-    will-change: transform, opacity;
-}
-
-@keyframes messageSlide {
-    from {
-        opacity: 0;
-        transform: translateY(10px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
-}
-
-/* Smooth opacity transitions for content changes */
-.chatbot-message-text {
-    transition: opacity 0.2s ease;
-}
-
-/* Enhanced loading animation */
-.chatbot-thinking {
-    will-change: opacity;
 }
 
 .chatbot-message-user {
@@ -571,7 +549,7 @@
     align-items: center;
     justify-content: center;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all 0.15s ease;
     will-change: transform, background-color;
 }
 
@@ -597,6 +575,7 @@
     transform: translateZ(0);
     backface-visibility: hidden;
     -webkit-overflow-scrolling: touch;
+    contain: layout style paint;
 }
 
 .chatbot-list-view::-webkit-scrollbar {
