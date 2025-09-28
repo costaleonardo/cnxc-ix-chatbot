@@ -72,7 +72,7 @@
                     role: 'assistant',
                     content: "Welcome to the Concentrix Bot. I'm an AI bot here to connect you to the people and information at Concentrix that you need.\n\nWhat would you like to do next?",
                     timestamp: this.getCurrentTime(),
-                    actions: ['[Action]', '[Action]', '[Action]']
+                    actions: ['Who is Concentrix?', 'Speak with a specialist', 'Learn about our careers']
                 };
                 this.addMessage(welcomeMsg);
                 
