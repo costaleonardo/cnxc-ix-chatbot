@@ -44,6 +44,10 @@
                 // Small delay to ensure DOM is ready
                 setTimeout(() => {
                     this.elements.window?.classList.add('open');
+                    // Ensure messages are visible if this is a new session
+                    if (this.state.messages.length > 0 && this.elements.messages && !this.elements.messages.hasChildNodes()) {
+                        this.elements.messages.innerHTML = this.buildMessagesHTML();
+                    }
                     this.scrollToBottom();
                 }, 100);
             }
@@ -70,6 +74,11 @@
                     actions: ['[Action]', '[Action]', '[Action]']
                 };
                 this.addMessage(welcomeMsg);
+                
+                // Ensure the message is rendered to the DOM
+                if (this.elements.messages) {
+                    this.appendMessage(welcomeMsg, false);
+                }
             }
         }
         
