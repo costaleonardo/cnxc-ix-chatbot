@@ -233,6 +233,16 @@ class Hello_Chatbot_Admin {
             wp_send_json_error('Message cannot be empty');
         }
         
+        // Check for custom prompts with predefined responses
+        $custom_responses = $this->get_custom_responses();
+        if (isset($custom_responses[$message])) {
+            wp_send_json_success(array(
+                'answer' => $custom_responses[$message]['answer'],
+                'references' => $custom_responses[$message]['references']
+            ));
+            return;
+        }
+        
         // Get API settings
         $api_endpoint = get_option('chatbot_api_endpoint');
         $api_token = get_option('chatbot_api_token');
@@ -327,5 +337,63 @@ class Hello_Chatbot_Admin {
             'answer' => $answer,
             'references' => $references
         ));
+    }
+    
+    /**
+     * Get predefined responses for custom prompts
+     */
+    private function get_custom_responses() {
+        return array(
+            'Who is Concentrix?' => array(
+                'answer' => "Concentrix is a leading global provider of customer experience (CX) solutions and technology. We help the world's best brands – across 40+ countries – improve their business performance and create better experiences for their customers.\n\nOur services include:\n• Customer support and engagement solutions\n• Digital transformation services\n• Data analytics and insights\n• Technology consulting and implementation\n• Business process optimization\n\nWe combine human expertise with advanced technology to deliver personalized, efficient customer experiences that drive business growth.",
+                'references' => array(
+                    array(
+                        'title' => 'About Concentrix',
+                        'url' => 'https://www.concentrix.com/about/',
+                        'description' => 'Learn more about Concentrix, our mission, values, and global presence in customer experience solutions.'
+                    ),
+                    array(
+                        'title' => 'Our Services',
+                        'url' => 'https://www.concentrix.com/services/',
+                        'description' => 'Explore our comprehensive range of customer experience and technology services.'
+                    )
+                )
+            ),
+            'Speak with a specialist' => array(
+                'answer' => "I'd be happy to connect you with one of our specialists! Here are the best ways to get in touch:\n\n📞 **Phone**: Call our main line and ask to speak with a specialist about your specific needs\n\n💼 **Business Inquiries**: Visit our contact page to submit a detailed inquiry about your business requirements\n\n🌐 **Online**: Use our website's contact form to describe your needs, and we'll match you with the right specialist\n\n📧 **Email**: Send us your questions and we'll have the appropriate specialist respond within 24 hours\n\nOur specialists can help with customer experience strategy, technology solutions, digital transformation, and business process optimization. What specific area would you like to discuss?",
+                'references' => array(
+                    array(
+                        'title' => 'Contact Us',
+                        'url' => 'https://www.concentrix.com/contact/',
+                        'description' => 'Get in touch with our team of specialists for personalized assistance with your business needs.'
+                    ),
+                    array(
+                        'title' => 'Request a Consultation',
+                        'url' => 'https://www.concentrix.com/contact/consultation/',
+                        'description' => 'Schedule a consultation with our experts to discuss your customer experience challenges and solutions.'
+                    )
+                )
+            ),
+            'Learn about our careers' => array(
+                'answer' => "Join the Concentrix team and build an exciting career in customer experience and technology! We offer opportunities worldwide across various fields:\n\n🚀 **Career Areas**:\n• Customer Support & Success\n• Technology & Engineering\n• Data Analytics & AI\n• Sales & Business Development\n• Digital Marketing\n• Operations & Project Management\n• Finance & HR\n\n✨ **Why Choose Concentrix**:\n• Global career opportunities in 40+ countries\n• Continuous learning and development programs\n• Diverse and inclusive work environment\n• Competitive benefits and compensation\n• Work-from-home and hybrid options\n• Career advancement opportunities\n\n📋 **How to Apply**:\nVisit our careers page to browse current openings, learn about our culture, and submit your application. We're always looking for talented individuals who are passionate about delivering exceptional customer experiences!",
+                'references' => array(
+                    array(
+                        'title' => 'Careers at Concentrix',
+                        'url' => 'https://www.concentrix.com/careers/',
+                        'description' => 'Explore career opportunities, company culture, and benefits at Concentrix.'
+                    ),
+                    array(
+                        'title' => 'Job Search',
+                        'url' => 'https://jobs.concentrix.com/',
+                        'description' => 'Search and apply for current job openings at Concentrix worldwide.'
+                    ),
+                    array(
+                        'title' => 'Life at Concentrix',
+                        'url' => 'https://www.concentrix.com/careers/life-at-concentrix/',
+                        'description' => 'Discover what it\'s like to work at Concentrix, our values, and employee experiences.'
+                    )
+                )
+            )
+        );
     }
 }
