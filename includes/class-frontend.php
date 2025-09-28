@@ -49,7 +49,7 @@ class Hello_Chatbot_Frontend {
                 'thinking' => __('Thinking...', 'hello-chatbot'),
                 'error' => __('Sorry, I encountered an error. Please try again.', 'hello-chatbot'),
                 'offline' => __('Chat is currently unavailable.', 'hello-chatbot'),
-                'typeMessage' => __('Type a message...', 'hello-chatbot'),
+                'typeMessage' => __('Type a message', 'hello-chatbot'),
                 'send' => __('Send', 'hello-chatbot'),
                 'newChat' => __('New Chat', 'hello-chatbot'),
                 'references' => __('References', 'hello-chatbot'),

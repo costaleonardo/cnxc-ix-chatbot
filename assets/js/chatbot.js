@@ -23,7 +23,7 @@
                 messages: [],
                 currentSession: null,
                 sessions: [],
-                showHistory: false,
+                viewMode: 'chat', // 'chat' or 'list' - controls which view is shown
                 showTooltip: !savedWidgetState.isOpen // Don't show tooltip if widget should auto-open
             };
             
@@ -65,8 +65,9 @@
                 const welcomeMsg = {
                     id: 'welcome-' + Date.now(),
                     role: 'assistant',
-                    content: this.config.welcomeMessage || 'Welcome! How can I help you today?',
-                    timestamp: this.getCurrentTime()
+                    content: "Welcome to the Concentrix Bot. I'm an AI bot here to connect you to the people and information at Concentrix that you need.\n\nWhat would you like to do next?",
+                    timestamp: this.getCurrentTime(),
+                    actions: ['[Action]', '[Action]', '[Action]']
                 };
                 this.addMessage(welcomeMsg);
             }
@@ -109,57 +110,60 @@
                 <div id="chatbot-window" class="chatbot-window ${this.state.isOpen ? 'open' : ''}">
                     <!-- Header -->
                     <div class="chatbot-header">
+                        ${this.state.viewMode === 'chat' && this.state.sessions.length > 0 ? 
+                            `<button id="chatbot-back-btn" class="chatbot-back-btn" aria-label="View all chats">
+                                ${this.getBackIcon()}
+                            </button>` : ''}
                         <div class="chatbot-title">
-                            <h3>concentrix Bot</h3>
-                            ${this.state.currentSession?.title !== 'New Chat' ? 
+                            <h3>${this.state.viewMode === 'list' ? 'Chat History' : 'concentrix Bot'}</h3>
+                            ${this.state.viewMode === 'chat' && this.state.currentSession?.title !== 'New Chat' ? 
                                 `<div class="chatbot-session-title">${this.state.currentSession.title}</div>` : ''}
                         </div>
                         <div class="chatbot-controls">
-                            <button id="chatbot-history-btn" class="chatbot-control-btn" aria-label="History">
-                                ${this.getHistoryIcon()}
-                            </button>
-                            <button id="chatbot-refresh-btn" class="chatbot-control-btn" aria-label="New chat">
-                                ${this.getRefreshIcon()}
-                            </button>
+                            ${this.state.viewMode === 'chat' ? `
+                                <button id="chatbot-info-btn" class="chatbot-control-btn" aria-label="Info">
+                                    ${this.getInfoIcon()}
+                                </button>
+                                <button id="chatbot-refresh-btn" class="chatbot-control-btn" aria-label="New chat">
+                                    ${this.getRefreshIcon()}
+                                </button>` : ''}
                             <button id="chatbot-minimize-btn" class="chatbot-control-btn" aria-label="Minimize">
                                 ${this.getMinimizeIcon()}
                             </button>
                         </div>
                     </div>
                     
-                    <!-- Messages Area -->
-                    <div id="chatbot-messages" class="chatbot-messages">
-                        ${this.buildMessagesHTML()}
-                    </div>
-                    
-                    <!-- Input Area -->
-                    <div class="chatbot-input-area">
-                        <form id="chatbot-form" class="chatbot-form">
-                            <textarea 
-                                id="chatbot-input" 
-                                class="chatbot-input" 
-                                placeholder="${this.config.strings.typeMessage}"
-                                rows="1"
-                            ></textarea>
-                            <button type="submit" class="chatbot-send-btn" aria-label="Send">
-                                ${this.getSendIcon()}
+                    ${this.state.viewMode === 'chat' ? `
+                        <!-- Messages Area -->
+                        <div id="chatbot-messages" class="chatbot-messages">
+                            ${this.buildMessagesHTML()}
+                        </div>
+                        
+                        <!-- Input Area -->
+                        <div class="chatbot-input-area">
+                            <form id="chatbot-form" class="chatbot-form">
+                                <textarea 
+                                    id="chatbot-input" 
+                                    class="chatbot-input" 
+                                    placeholder="${this.config.strings.typeMessage}"
+                                    rows="1"
+                                ></textarea>
+                                <button type="submit" class="chatbot-send-btn" aria-label="Send">
+                                    ${this.getSendIcon()}
+                                </button>
+                            </form>
+                        </div>
+                    ` : `
+                        <!-- Chat List View -->
+                        <div id="chatbot-list-view" class="chatbot-list-view">
+                            <button id="chatbot-new-chat" class="chatbot-new-chat-btn">
+                                + ${this.config.strings.newChat || 'New Chat'}
                             </button>
-                        </form>
-                    </div>
-                    
-                    <!-- History Sidebar (inside chat window) -->
-                    <div id="chatbot-history" class="chatbot-history ${this.state.showHistory ? 'open' : ''}">
-                        <div class="chatbot-history-header">
-                            <h3>Chat History</h3>
-                            <button id="chatbot-history-close" class="chatbot-history-close">×</button>
+                            <div class="chatbot-sessions-grid">
+                                ${this.buildSessionsListHTML()}
+                            </div>
                         </div>
-                        <button id="chatbot-new-chat" class="chatbot-new-chat-btn">
-                            + ${this.config.strings.newChat}
-                        </button>
-                        <div class="chatbot-history-list">
-                            ${this.buildHistoryHTML()}
-                        </div>
-                    </div>
+                    `}
                 </div>
             `;
         }
@@ -176,12 +180,16 @@
         buildMessageHTML(message) {
             const isUser = message.role === 'user';
             const avatar = isUser ? this.getUserIcon() : this.getBotIcon();
+            const sender = isUser ? 'You' : '[Assistant name]';
             
             let html = `
                 <div class="chatbot-message chatbot-message-${message.role}">
                     <div class="chatbot-message-avatar">${avatar}</div>
                     <div class="chatbot-message-content">
-                        <div class="chatbot-message-time">${message.timestamp}</div>
+                        <div class="chatbot-message-header">
+                            <span class="chatbot-message-sender">${sender}</span>
+                            <span class="chatbot-message-time">${message.timestamp}</span>
+                        </div>
                         <div class="chatbot-message-text">${this.formatMessage(message.content)}</div>
             `;
             
@@ -230,7 +238,7 @@
             return `
                 <div class="chatbot-actions">
                     ${actions.map(action => `
-                        <button class="chatbot-action-btn" data-action="${action}">
+                        <button class="chatbot-action-btn" type="button">
                             ${action}
                         </button>
                     `).join('')}
@@ -243,7 +251,10 @@
                 <div class="chatbot-message chatbot-message-assistant chatbot-thinking">
                     <div class="chatbot-message-avatar">${this.getBotIcon()}</div>
                     <div class="chatbot-message-content">
-                        <div class="chatbot-message-time">${this.getCurrentTime()}</div>
+                        <div class="chatbot-message-header">
+                            <span class="chatbot-message-sender">[Assistant name]</span>
+                            <span class="chatbot-message-time">${this.getCurrentTime()}</span>
+                        </div>
                         <div class="chatbot-thinking-dots">
                             <span>${this.config.strings.thinking}</span>
                             <span class="dot">.</span>
@@ -255,18 +266,33 @@
             `;
         }
         
-        buildHistoryHTML() {
+        buildSessionsListHTML() {
             if (this.state.sessions.length === 0) {
-                return '<div class="chatbot-history-empty">No chat history yet</div>';
+                return '<div class="chatbot-sessions-empty">No previous chats yet. Start a new conversation!</div>';
             }
             
-            return this.state.sessions.map(session => `
-                <div class="chatbot-history-item ${session.id === this.state.currentSession?.id ? 'active' : ''}" 
-                     data-session-id="${session.id}">
-                    <div class="chatbot-history-item-title">${session.title}</div>
-                    <div class="chatbot-history-item-date">${this.formatDate(session.updated)}</div>
-                </div>
-            `).join('');
+            return this.state.sessions.map(session => {
+                const isActive = session.id === this.state.currentSession?.id;
+                const lastMessage = session.messages && session.messages.length > 0 ? 
+                    session.messages[session.messages.length - 1] : null;
+                const preview = lastMessage ? 
+                    (lastMessage.role === 'user' ? 'You: ' : 'Bot: ') + 
+                    lastMessage.content.substring(0, 50) + 
+                    (lastMessage.content.length > 50 ? '...' : '') : 
+                    'No messages yet';
+                
+                return `
+                    <div class="chatbot-session-card ${isActive ? 'active' : ''}" 
+                         data-session-id="${session.id}">
+                        <div class="chatbot-session-card-header">
+                            <div class="chatbot-session-card-title">${session.title}</div>
+                            ${isActive ? '<span class="chatbot-session-active-badge">Current</span>' : ''}
+                        </div>
+                        <div class="chatbot-session-card-preview">${preview}</div>
+                        <div class="chatbot-session-card-date">${this.formatDate(session.updated)}</div>
+                    </div>
+                `;
+            }).join('');
         }
         
         cacheElements() {
@@ -277,12 +303,12 @@
                 input: document.getElementById('chatbot-input'),
                 form: document.getElementById('chatbot-form'),
                 tooltip: document.getElementById('chatbot-tooltip'),
-                history: document.getElementById('chatbot-history'),
-                historyBtn: document.getElementById('chatbot-history-btn'),
+                backBtn: document.getElementById('chatbot-back-btn'),
+                infoBtn: document.getElementById('chatbot-info-btn'),
                 refreshBtn: document.getElementById('chatbot-refresh-btn'),
                 minimizeBtn: document.getElementById('chatbot-minimize-btn'),
                 newChatBtn: document.getElementById('chatbot-new-chat'),
-                historyClose: document.getElementById('chatbot-history-close')
+                listView: document.getElementById('chatbot-list-view')
             };
         }
         
@@ -292,8 +318,11 @@
             
             // Window controls
             this.elements.minimizeBtn?.addEventListener('click', () => this.closeChat());
-            this.elements.historyBtn?.addEventListener('click', () => this.toggleHistory());
+            this.elements.infoBtn?.addEventListener('click', () => this.showInfo());
             this.elements.refreshBtn?.addEventListener('click', () => this.startNewChat());
+            
+            // Back button (to switch to list view)
+            this.elements.backBtn?.addEventListener('click', () => this.switchToListView());
             
             // Form submission
             this.elements.form?.addEventListener('submit', (e) => this.handleSubmit(e));
@@ -309,9 +338,20 @@
                 }
             });
             
-            // History controls
-            this.elements.newChatBtn?.addEventListener('click', () => this.startNewChat());
-            this.elements.historyClose?.addEventListener('click', () => this.toggleHistory());
+            // New chat button
+            this.elements.newChatBtn?.addEventListener('click', () => {
+                if (this.state.viewMode === 'list') {
+                    // Create new chat and switch to chat view
+                    const session = this.sessionManager.createSession();
+                    this.state.currentSession = session;
+                    this.state.sessions = this.sessionManager.getAllSessions();
+                    this.state.messages = [];
+                    this.showWelcomeMessage();
+                    this.switchToChatView();
+                } else {
+                    this.startNewChat();
+                }
+            });
             
             // Tooltip close
             document.querySelector('.chatbot-tooltip-close')?.addEventListener('click', () => {
@@ -319,17 +359,20 @@
                 this.elements.tooltip.classList.remove('show');
             });
             
-            // History item clicks
+            // Session card clicks (in list view)
             document.addEventListener('click', (e) => {
-                if (e.target.closest('.chatbot-history-item')) {
-                    const sessionId = e.target.closest('.chatbot-history-item').dataset.sessionId;
-                    this.switchSession(sessionId);
+                if (e.target.closest('.chatbot-session-card')) {
+                    const sessionId = e.target.closest('.chatbot-session-card').dataset.sessionId;
+                    this.switchToChatView(sessionId);
                 }
                 
                 // Action button clicks
                 if (e.target.classList.contains('chatbot-action-btn')) {
-                    const action = e.target.dataset.action;
-                    this.sendMessage(action);
+                    e.preventDefault();
+                    const action = e.target.textContent.trim();
+                    // Send the action text as a message
+                    this.elements.input.value = action;
+                    this.handleSubmit(e);
                 }
                 
                 // References toggle
@@ -363,9 +406,8 @@
             this.sessionManager.saveWidgetState(false);
         }
         
-        toggleHistory() {
-            this.state.showHistory = !this.state.showHistory;
-            this.elements.history.classList.toggle('open', this.state.showHistory);
+        showInfo() {
+            alert('Concentrix Bot v1.0\n\nPowered by AI to help you connect with Concentrix resources.');
         }
         
         startNewChat() {
@@ -376,11 +418,13 @@
                 this.state.messages = [];
                 
                 this.showWelcomeMessage();
-                this.updateMessagesUI();
-                this.updateHistoryUI();
                 
-                this.state.showHistory = false;
-                this.elements.history.classList.remove('open');
+                // If we're in list view, switch to chat view
+                if (this.state.viewMode === 'list') {
+                    this.switchToChatView();
+                } else {
+                    this.updateMessagesUI();
+                }
             }
         }
         
@@ -389,11 +433,13 @@
             if (session) {
                 this.state.currentSession = session;
                 this.state.messages = session.messages || [];
-                this.updateMessagesUI();
-                this.updateHistoryUI();
                 
-                this.state.showHistory = false;
-                this.elements.history.classList.remove('open');
+                // Ensure we're in chat view when switching sessions
+                if (this.state.viewMode === 'list') {
+                    this.switchToChatView();
+                } else {
+                    this.updateMessagesUI();
+                }
             }
         }
         
@@ -492,11 +538,20 @@
             this.scrollToBottom();
         }
         
-        updateHistoryUI() {
-            const historyList = document.querySelector('.chatbot-history-list');
-            if (historyList) {
-                historyList.innerHTML = this.buildHistoryHTML();
+        switchToListView() {
+            this.state.viewMode = 'list';
+            this.render();
+            this.attachEventListeners();
+        }
+        
+        switchToChatView(sessionId = null) {
+            if (sessionId && sessionId !== this.state.currentSession?.id) {
+                this.switchSession(sessionId);
             }
+            this.state.viewMode = 'chat';
+            this.render();
+            this.attachEventListeners();
+            this.scrollToBottom();
         }
         
         scrollToBottom() {
@@ -543,25 +598,17 @@
         }
         
         getBotIcon() {
-            return `<svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-                <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/>
-                <circle cx="9" cy="10" r="1.5" fill="currentColor"/>
-                <circle cx="15" cy="10" r="1.5" fill="currentColor"/>
-                <path d="M8 14C8 14 10 16 12 16C14 16 16 14 16 14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-            </svg>`;
+            return `<span style="font-size: 12px; font-weight: 600;">Bot</span>`;
         }
         
         getUserIcon() {
-            return `<svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-                <path d="M12 12C14.2091 12 16 10.2091 16 8C16 5.79086 14.2091 4 12 4C9.79086 4 8 5.79086 8 8C8 10.2091 9.79086 12 12 12Z" fill="currentColor"/>
-                <path d="M12 14C8.13401 14 5 17.134 5 21H19C19 17.134 15.866 14 12 14Z" fill="currentColor"/>
-            </svg>`;
+            return `<span style="font-size: 12px; font-weight: 600;">You</span>`;
         }
         
-        getHistoryIcon() {
+        getInfoIcon() {
             return `<svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                <path d="M12 2C6.48 2 2 6.48 2 12C2 17.52 6.48 22 12 22C17.52 22 22 17.52 22 12C22 6.48 17.52 2 12 2ZM12 20C7.59 20 4 16.41 4 12C4 7.59 7.59 4 12 4C16.41 4 20 7.59 20 12C20 16.41 16.41 20 12 20Z" fill="currentColor"/>
-                <path d="M12.5 7H11V13L16.25 16.15L17 14.92L12.5 12.25V7Z" fill="currentColor"/>
+                <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/>
+                <path d="M12 16V12M12 8H12.01" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
             </svg>`;
         }
         
@@ -573,13 +620,19 @@
         
         getMinimizeIcon() {
             return `<svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z" fill="currentColor"/>
+                <path d="M5 12H19" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
             </svg>`;
         }
         
         getSendIcon() {
             return `<svg width="16" height="16" viewBox="0 0 24 24" fill="none">
                 <path d="M2.01 21L23 12 2.01 3 2 10L17 12 2 14L2.01 21Z" fill="currentColor"/>
+            </svg>`;
+        }
+        
+        getBackIcon() {
+            return `<svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                <path d="M19 12H5M5 12L12 19M5 12L12 5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
             </svg>`;
         }
     }
