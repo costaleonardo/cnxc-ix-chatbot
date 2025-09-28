@@ -911,9 +911,112 @@
         }
         
         formatMessage(content) {
-            return content
-                .replace(/\n/g, '<br>')
-                .replace(/(https?:\/\/[^\s]+)/g, '<a href="$1" target="_blank" rel="noopener">$1</a>');
+            // First, escape HTML to prevent XSS attacks
+            const escapeHtml = (text) => {
+                const div = document.createElement('div');
+                div.textContent = text;
+                return div.innerHTML;
+            };
+            
+            // Store code blocks temporarily to prevent them from being processed
+            const codeBlocks = [];
+            let processedContent = content;
+            
+            // Extract and store code blocks
+            processedContent = processedContent.replace(/```([\s\S]*?)```/g, (match, code) => {
+                const index = codeBlocks.length;
+                codeBlocks.push(`<pre><code>${escapeHtml(code.trim())}</code></pre>`);
+                return `__CODE_BLOCK_${index}__`;
+            });
+            
+            // Extract and store inline code
+            processedContent = processedContent.replace(/`([^`]+)`/g, (match, code) => {
+                const index = codeBlocks.length;
+                codeBlocks.push(`<code>${escapeHtml(code)}</code>`);
+                return `__CODE_BLOCK_${index}__`;
+            });
+            
+            // Escape HTML in the remaining content
+            processedContent = escapeHtml(processedContent);
+            
+            // Process markdown elements (order matters!)
+            
+            // Headers (h1-h6)
+            processedContent = processedContent.replace(/^######\s+(.+)$/gm, '<h6>$1</h6>');
+            processedContent = processedContent.replace(/^#####\s+(.+)$/gm, '<h5>$1</h5>');
+            processedContent = processedContent.replace(/^####\s+(.+)$/gm, '<h4>$1</h4>');
+            processedContent = processedContent.replace(/^###\s+(.+)$/gm, '<h3>$1</h3>');
+            processedContent = processedContent.replace(/^##\s+(.+)$/gm, '<h2>$1</h2>');
+            processedContent = processedContent.replace(/^#\s+(.+)$/gm, '<h1>$1</h1>');
+            
+            // Bold text (must come before italic to handle ***text*** correctly)
+            processedContent = processedContent.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+            
+            // Italic text
+            processedContent = processedContent.replace(/\*([^*]+)\*/g, '<em>$1</em>');
+            processedContent = processedContent.replace(/_([^_]+)_/g, '<em>$1</em>');
+            
+            // Links [text](url)
+            processedContent = processedContent.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>');
+            
+            // Auto-link URLs (but not those already in anchor tags)
+            // Using a simpler regex for better browser compatibility
+            processedContent = processedContent.replace(/(^|[^"'>])(https?:\/\/[^\s<]+)(?![^<]*<\/a>)/g, '$1<a href="$2" target="_blank" rel="noopener">$2</a>');
+            
+            // Lists - Process line by line for better control
+            const lines = processedContent.split('\n');
+            let inList = false;
+            let listType = null;
+            const processedLines = [];
+            
+            lines.forEach((line, index) => {
+                // Check for unordered list items
+                if (/^[\*\-•]\s+/.test(line)) {
+                    if (!inList || listType !== 'ul') {
+                        if (inList) processedLines.push(`</${listType}>`);
+                        processedLines.push('<ul>');
+                        inList = true;
+                        listType = 'ul';
+                    }
+                    processedLines.push(`<li>${line.replace(/^[\*\-•]\s+/, '')}</li>`);
+                }
+                // Check for ordered list items
+                else if (/^\d+\.\s+/.test(line)) {
+                    if (!inList || listType !== 'ol') {
+                        if (inList) processedLines.push(`</${listType}>`);
+                        processedLines.push('<ol>');
+                        inList = true;
+                        listType = 'ol';
+                    }
+                    processedLines.push(`<li>${line.replace(/^\d+\.\s+/, '')}</li>`);
+                }
+                // Not a list item
+                else {
+                    if (inList) {
+                        processedLines.push(`</${listType}>`);
+                        inList = false;
+                        listType = null;
+                    }
+                    processedLines.push(line);
+                }
+            });
+            
+            // Close any open list
+            if (inList) {
+                processedLines.push(`</${listType}>`);
+            }
+            
+            processedContent = processedLines.join('\n');
+            
+            // Line breaks (but not within HTML tags)
+            processedContent = processedContent.replace(/\n/g, '<br>');
+            
+            // Restore code blocks
+            codeBlocks.forEach((block, index) => {
+                processedContent = processedContent.replace(`__CODE_BLOCK_${index}__`, block);
+            });
+            
+            return processedContent;
         }
         
         formatDate(timestamp) {
