@@ -24,7 +24,7 @@
                 currentSession: null,
                 sessions: [],
                 viewMode: 'chat', // 'chat' or 'list' - controls which view is shown
-                showTooltip: !savedWidgetState.isOpen // Don't show tooltip if widget should auto-open
+                showTooltip: false // Will be set in init() based on page load count and other conditions
             };
             
             this.elements = {};
@@ -35,7 +35,17 @@
         
         init() {
             this.sessionManager.initialize();
+            
+            // Increment page load count for welcome tooltip tracking
+            this.sessionManager.incrementPageLoadCount();
+            
             this.loadSession();
+            
+            // Set tooltip visibility based on page load count and other conditions
+            const savedWidgetState = this.sessionManager.getWidgetState();
+            this.state.showTooltip = this.sessionManager.shouldShowWelcomeTooltip() && 
+                                   !savedWidgetState.isOpen;
+            
             this.render();
             this.attachEventListeners();
             this.showWelcomeMessage();
@@ -61,7 +71,6 @@
             
             if (session && session.messages && session.messages.length > 0) {
                 this.state.messages = session.messages;
-                this.state.showTooltip = false;
             }
         }
         
@@ -979,7 +988,9 @@
         constructor() {
             this.STORAGE_KEY = 'helloChatbotSessions';
             this.WIDGET_STATE_KEY = 'helloChatbotWidgetState';
+            this.PAGE_LOAD_COUNT_KEY = 'helloChatbotPageLoadCount';
             this.MAX_SESSIONS = 50;
+            this.WELCOME_TOOLTIP_MAX_LOADS = 10;
         }
         
         initialize() {
@@ -1018,6 +1029,34 @@
             } catch (e) {
                 console.error('Could not save widget state:', e);
             }
+        }
+        
+        // Page load tracking methods
+        getPageLoadCount() {
+            try {
+                const count = localStorage.getItem(this.PAGE_LOAD_COUNT_KEY);
+                return count ? parseInt(count, 10) : 0;
+            } catch (e) {
+                console.warn('Could not get page load count:', e);
+                return 0;
+            }
+        }
+        
+        incrementPageLoadCount() {
+            try {
+                const currentCount = this.getPageLoadCount();
+                const newCount = currentCount + 1;
+                localStorage.setItem(this.PAGE_LOAD_COUNT_KEY, newCount.toString());
+                return newCount;
+            } catch (e) {
+                console.error('Could not increment page load count:', e);
+                return this.getPageLoadCount();
+            }
+        }
+        
+        shouldShowWelcomeTooltip() {
+            const count = this.getPageLoadCount();
+            return count <= this.WELCOME_TOOLTIP_MAX_LOADS;
         }
         
         getSessionsData() {
