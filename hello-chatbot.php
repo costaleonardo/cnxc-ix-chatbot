@@ -55,10 +55,11 @@ class Hello_Chatbot {
         // Load text domain for translations
         load_plugin_textdomain('hello-chatbot', false, dirname(HELLO_CHATBOT_PLUGIN_BASENAME) . '/languages');
         
-        // Initialize components
-        if (is_admin()) {
-            new Hello_Chatbot_Admin();
-        } else {
+        // Initialize admin class (handles AJAX for both admin and frontend)
+        new Hello_Chatbot_Admin();
+        
+        // Initialize frontend if not in admin
+        if (!is_admin()) {
             new Hello_Chatbot_Frontend();
         }
     }

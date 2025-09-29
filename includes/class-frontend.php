@@ -46,6 +46,7 @@ class Hello_Chatbot_Frontend {
             'position' => get_option('chatbot_position', 'bottom-right'),
             'welcomeMessage' => get_option('chatbot_welcome_message'),
             'chatIconUrl' => HELLO_CHATBOT_PLUGIN_URL . 'assets/img/chat-icon.svg',
+            'enableStreaming' => true, // Enable streaming responses by default
             'strings' => array(
                 'thinking' => __('Thinking...', 'hello-chatbot'),
                 'error' => __('Sorry, I encountered an error. Please try again.', 'hello-chatbot'),

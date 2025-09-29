@@ -20,6 +20,10 @@ class Hello_Chatbot_Admin {
         // AJAX handlers for frontend chat messages (admin processes all AJAX requests)
         add_action('wp_ajax_hello_chatbot_send_message', array($this, 'handle_message'));
         add_action('wp_ajax_nopriv_hello_chatbot_send_message', array($this, 'handle_message'));
+        
+        // AJAX handlers for streaming messages
+        add_action('wp_ajax_hello_chatbot_stream_message', array($this, 'handle_stream_message'));
+        add_action('wp_ajax_nopriv_hello_chatbot_stream_message', array($this, 'handle_stream_message'));
     }
     
     public function add_menu() {
@@ -163,6 +167,9 @@ class Hello_Chatbot_Admin {
         $api_endpoint = get_option('chatbot_api_endpoint');
         $api_token = get_option('chatbot_api_token');
         
+        // Use the latest token provided by user for full functionality
+        $api_token = 'eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiIsIng1dCI6IkhTMjNiN0RvN1RjYVUxUm9MSHdwSXEyNFZZZyIsImtpZCI6IkhTMjNiN0RvN1RjYVUxUm9MSHdwSXEyNFZZZyJ9.eyJhdWQiOiI5NDM5ZjYxNS1mZTFiLTRhZjEtOWM1Yy1iZjdiZDdhODI3NzQiLCJpc3MiOiJodHRwczovL3N0cy53aW5kb3dzLm5ldC81OTllNTFkNi0yZjhjLTQzNDctOGU1OS0xZjc5NWE1MWE5OGMvIiwiaWF0IjoxNzU5MTc0ODc1LCJuYmYiOjE3NTkxNzQ4NzUsImV4cCI6MTc1OTE3ODc3NSwiYWlvIjoiazJSZ1lGaGtNeU8vZU9YYWxCcjJnRFd2T2YrOUFBQT0iLCJhcHBpZCI6Ijk0MzlmNjE1LWZlMWItNGFmMS05YzVjLWJmN2JkN2E4Mjc3NCIsImFwcGlkYWNyIjoiMSIsImlkcCI6Imh0dHBzOi8vc3RzLndpbmRvd3MubmV0LzU5OWU1MWQ2LTJmOGMtNDM0Ny04ZTU5LTFmNzk1YTUxYTk4Yy8iLCJvaWQiOiJiYWZmYWY5MS03ZGZlLTQ2YTctODJiNi04ZTViNjUyODI3MmYiLCJyaCI6IjEuQVE0QTFsR2VXWXd2UjBPT1dSOTVXbEdwakJYMk9aUWJfdkZLbkZ5X2U5ZW9KM1FPQUFBT0FBLiIsInN1YiI6ImJhZmZhZjkxLTdkZmUtNDZhNy04MmI2LThlNWI2NTI4MjcyZiIsInRpZCI6IjU5OWU1MWQ2LTJmOGMtNDM0Ny04ZTU5LTFmNzk1YTUxYTk4YyIsInV0aSI6InBXekxBSzktZVV1dWRGUGdRazdBQVEiLCJ2ZXIiOiIxLjAiLCJ4bXNfZnRkIjoiVi1pMTZYTmkwR09DeVBvc05RQU12LTJKN3BibzVkUmhxMkF0ZVNtYm04MEJkWE5sWVhOMExXUnpiWE0ifQ.FUtAppCM4Lle-QmuME8fZ8cTuJwngO6a8oMiFCVYHssvhQYo5zsDUF-6QPMm7LMUCZvhokOAauJ32u-bi5zs0WWPQRaqLZD5ZvhOkm84IhO6-V6G3Gjmcr345g3puRv-Fe6YN9E5dMWOGI_wvaV_S6v5BehSHOGTkZgoT0ReQ5msE1p76RkWZbcW4G7_5-mysZ_ORXcxH_oJVUqyWWDKjAo80bZ4ImpFVG-9eab__GS884FQJresCNSbkoeznk9gkWTm79gFvV9UjaRNqhJbSwnP_wIE3PsVWST1LXzcocCaqVNx_e8KltXNBt0O2t2vivkuksKYxt5ujaI2HA8l5Q';
+        
         if (empty($api_endpoint)) {
             wp_send_json_error('API endpoint not configured');
         }
@@ -188,7 +195,7 @@ class Hello_Chatbot_Admin {
             ),
             'output' => array(
                 'language' => 'en',
-                'maxLength' => 400
+                'maxLength' => 800
             ),
             'useCaseMeta' => array(
                 'context' => array(
@@ -247,6 +254,9 @@ class Hello_Chatbot_Admin {
         $api_endpoint = get_option('chatbot_api_endpoint');
         $api_token = get_option('chatbot_api_token');
         
+        // Use the latest token provided by user for full functionality
+        $api_token = 'eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiIsIng1dCI6IkhTMjNiN0RvN1RjYVUxUm9MSHdwSXEyNFZZZyIsImtpZCI6IkhTMjNiN0RvN1RjYVUxUm9MSHdwSXEyNFZZZyJ9.eyJhdWQiOiI5NDM5ZjYxNS1mZTFiLTRhZjEtOWM1Yy1iZjdiZDdhODI3NzQiLCJpc3MiOiJodHRwczovL3N0cy53aW5kb3dzLm5ldC81OTllNTFkNi0yZjhjLTQzNDctOGU1OS0xZjc5NWE1MWE5OGMvIiwiaWF0IjoxNzU5MTc0ODc1LCJuYmYiOjE3NTkxNzQ4NzUsImV4cCI6MTc1OTE3ODc3NSwiYWlvIjoiazJSZ1lGaGtNeU8vZU9YYWxCcjJnRFd2T2YrOUFBQT0iLCJhcHBpZCI6Ijk0MzlmNjE1LWZlMWItNGFmMS05YzVjLWJmN2JkN2E4Mjc3NCIsImFwcGlkYWNyIjoiMSIsImlkcCI6Imh0dHBzOi8vc3RzLndpbmRvd3MubmV0LzU5OWU1MWQ2LTJmOGMtNDM0Ny04ZTU5LTFmNzk1YTUxYTk4Yy8iLCJvaWQiOiJiYWZmYWY5MS03ZGZlLTQ2YTctODJiNi04ZTViNjUyODI3MmYiLCJyaCI6IjEuQVE0QTFsR2VXWXd2UjBPT1dSOTVXbEdwakJYMk9aUWJfdkZLbkZ5X2U5ZW9KM1FPQUFBT0FBLiIsInN1YiI6ImJhZmZhZjkxLTdkZmUtNDZhNy04MmI2LThlNWI2NTI4MjcyZiIsInRpZCI6IjU5OWU1MWQ2LTJmOGMtNDM0Ny04ZTU5LTFmNzk1YTUxYTk4YyIsInV0aSI6InBXekxBSzktZVV1dWRGUGdRazdBQVEiLCJ2ZXIiOiIxLjAiLCJ4bXNfZnRkIjoiVi1pMTZYTmkwR09DeVBvc05RQU12LTJKN3BibzVkUmhxMkF0ZVNtYm04MEJkWE5sWVhOMExXUnpiWE0ifQ.FUtAppCM4Lle-QmuME8fZ8cTuJwngO6a8oMiFCVYHssvhQYo5zsDUF-6QPMm7LMUCZvhokOAauJ32u-bi5zs0WWPQRaqLZD5ZvhOkm84IhO6-V6G3Gjmcr345g3puRv-Fe6YN9E5dMWOGI_wvaV_S6v5BehSHOGTkZgoT0ReQ5msE1p76RkWZbcW4G7_5-mysZ_ORXcxH_oJVUqyWWDKjAo80bZ4ImpFVG-9eab__GS884FQJresCNSbkoeznk9gkWTm79gFvV9UjaRNqhJbSwnP_wIE3PsVWST1LXzcocCaqVNx_e8KltXNBt0O2t2vivkuksKYxt5ujaI2HA8l5Q';
+        
         if (empty($api_endpoint)) {
             wp_send_json_error('Chatbot is not configured');
         }
@@ -273,7 +283,7 @@ class Hello_Chatbot_Admin {
             ),
             'output' => array(
                 'language' => 'en',
-                'maxLength' => 400
+                'maxLength' => 800
             ),
             'useCaseMeta' => array(
                 'context' => array(
@@ -282,7 +292,7 @@ class Hello_Chatbot_Admin {
                         'mask' => false
                     )
                 ),
-                'stream' => false
+                'stream' => true
             )
         );
         
@@ -337,6 +347,210 @@ class Hello_Chatbot_Admin {
             'answer' => $answer,
             'references' => $references
         ));
+    }
+    
+    /**
+     * Handle streaming message request using Server-Sent Events
+     */
+    public function handle_stream_message() {
+        // Verify nonce
+        if (!isset($_GET['nonce']) || !wp_verify_nonce($_GET['nonce'], 'hello_chatbot_nonce')) {
+            header('Content-Type: text/event-stream');
+            header('Cache-Control: no-cache');
+            echo "data: " . json_encode(array('error' => 'Invalid security token')) . "\n\n";
+            exit;
+        }
+        
+        $message = isset($_GET['message']) ? sanitize_text_field($_GET['message']) : '';
+        $page_context = isset($_GET['page_context']) ? sanitize_text_field($_GET['page_context']) : '';
+        
+        if (empty($message)) {
+            header('Content-Type: text/event-stream');
+            header('Cache-Control: no-cache');
+            echo "data: " . json_encode(array('error' => 'Message cannot be empty')) . "\n\n";
+            exit;
+        }
+        
+        // Set headers for SSE and disable all buffering
+        header('Content-Type: text/event-stream');
+        header('Cache-Control: no-cache, must-revalidate');
+        header('Connection: keep-alive');
+        header('X-Accel-Buffering: no'); // Disable Nginx buffering
+        header('Access-Control-Allow-Origin: *');
+        header('Access-Control-Allow-Headers: Cache-Control');
+        
+        // Disable all output buffering for real-time streaming
+        if (ob_get_level()) {
+            ob_end_clean();
+        }
+        
+        // Set unlimited execution time for streaming
+        set_time_limit(0);
+        
+        // Check for custom prompts with predefined responses
+        $custom_responses = $this->get_custom_responses();
+        if (isset($custom_responses[$message])) {
+            // Simulate streaming for custom responses by breaking into smaller chunks
+            $full_text = $custom_responses[$message]['answer'];
+            $words = explode(' ', $full_text);
+            $chunk_size = 5; // Send 5 words at a time for smooth streaming
+            
+            for ($i = 0; $i < count($words); $i += $chunk_size) {
+                $word_chunk = implode(' ', array_slice($words, $i, $chunk_size));
+                if ($i + $chunk_size < count($words)) {
+                    $word_chunk .= ' '; // Add space if not the last chunk
+                }
+                
+                echo "data: " . json_encode(array(
+                    'type' => 'chunk',
+                    'content' => $word_chunk
+                )) . "\n\n";
+                flush();
+                
+                // Small delay to simulate smooth streaming (match test file speed)
+                usleep(50000); // 50ms delay (~20 words per second)
+            }
+            
+            // Send references
+            echo "data: " . json_encode(array(
+                'type' => 'references',
+                'references' => $custom_responses[$message]['references']
+            )) . "\n\n";
+            flush();
+            
+            // Send completion signal
+            echo "data: " . json_encode(array('type' => 'done')) . "\n\n";
+            flush();
+            exit;
+        }
+        
+        // Get API settings
+        $api_endpoint = get_option('chatbot_api_endpoint');
+        $api_token = get_option('chatbot_api_token');
+        
+        // Use the latest token provided by user for full functionality
+        $api_token = 'eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiIsIng1dCI6IkhTMjNiN0RvN1RjYVUxUm9MSHdwSXEyNFZZZyIsImtpZCI6IkhTMjNiN0RvN1RjYVUxUm9MSHdwSXEyNFZZZyJ9.eyJhdWQiOiI5NDM5ZjYxNS1mZTFiLTRhZjEtOWM1Yy1iZjdiZDdhODI3NzQiLCJpc3MiOiJodHRwczovL3N0cy53aW5kb3dzLm5ldC81OTllNTFkNi0yZjhjLTQzNDctOGU1OS0xZjc5NWE1MWE5OGMvIiwiaWF0IjoxNzU5MTc0ODc1LCJuYmYiOjE3NTkxNzQ4NzUsImV4cCI6MTc1OTE3ODc3NSwiYWlvIjoiazJSZ1lGaGtNeU8vZU9YYWxCcjJnRFd2T2YrOUFBQT0iLCJhcHBpZCI6Ijk0MzlmNjE1LWZlMWItNGFmMS05YzVjLWJmN2JkN2E4Mjc3NCIsImFwcGlkYWNyIjoiMSIsImlkcCI6Imh0dHBzOi8vc3RzLndpbmRvd3MubmV0LzU5OWU1MWQ2LTJmOGMtNDM0Ny04ZTU5LTFmNzk1YTUxYTk4Yy8iLCJvaWQiOiJiYWZmYWY5MS03ZGZlLTQ2YTctODJiNi04ZTViNjUyODI3MmYiLCJyaCI6IjEuQVE0QTFsR2VXWXd2UjBPT1dSOTVXbEdwakJYMk9aUWJfdkZLbkZ5X2U5ZW9KM1FPQUFBT0FBLiIsInN1YiI6ImJhZmZhZjkxLTdkZmUtNDZhNy04MmI2LThlNWI2NTI4MjcyZiIsInRpZCI6IjU5OWU1MWQ2LTJmOGMtNDM0Ny04ZTU5LTFmNzk1YTUxYTk4YyIsInV0aSI6InBXekxBSzktZVV1dWRGUGdRazdBQVEiLCJ2ZXIiOiIxLjAiLCJ4bXNfZnRkIjoiVi1pMTZYTmkwR09DeVBvc05RQU12LTJKN3BibzVkUmhxMkF0ZVNtYm04MEJkWE5sWVhOMExXUnpiWE0ifQ.FUtAppCM4Lle-QmuME8fZ8cTuJwngO6a8oMiFCVYHssvhQYo5zsDUF-6QPMm7LMUCZvhokOAauJ32u-bi5zs0WWPQRaqLZD5ZvhOkm84IhO6-V6G3Gjmcr345g3puRv-Fe6YN9E5dMWOGI_wvaV_S6v5BehSHOGTkZgoT0ReQ5msE1p76RkWZbcW4G7_5-mysZ_ORXcxH_oJVUqyWWDKjAo80bZ4ImpFVG-9eab__GS884FQJresCNSbkoeznk9gkWTm79gFvV9UjaRNqhJbSwnP_wIE3PsVWST1LXzcocCaqVNx_e8KltXNBt0O2t2vivkuksKYxt5ujaI2HA8l5Q';
+        
+        if (empty($api_endpoint)) {
+            echo "data: " . json_encode(array('error' => 'Chatbot is not configured')) . "\n\n";
+            exit;
+        }
+        
+        // Build request body for KBot API with streaming enabled
+        $request_body = array(
+            'input' => array(
+                'language' => 'en',
+                'data' => array(
+                    'question' => $message,
+                    'dataGroup' => 'Website Bot',
+                    'parentConversationId' => null
+                )
+            ),
+            'output' => array(
+                'language' => 'en',
+                'maxLength' => 800
+            ),
+            'useCaseMeta' => array(
+                'context' => array(
+                    'placeholders' => new stdClass(),
+                    'PIIdata' => array(
+                        'mask' => false
+                    )
+                ),
+                'stream' => false // Use non-streaming for complete response, simulate streaming on our end
+            )
+        );
+        
+        // Initialize cURL to get complete response first
+        $ch = curl_init();
+        curl_setopt($ch, CURLOPT_URL, $api_endpoint);
+        curl_setopt($ch, CURLOPT_POST, 1);
+        curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($request_body));
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_HEADER, false);
+        curl_setopt($ch, CURLOPT_TIMEOUT, 60);
+        curl_setopt($ch, CURLOPT_HTTPHEADER, array(
+            'Content-Type: application/json',
+            'Accept: application/json',
+            'Authorization: Bearer ' . $api_token,
+            'Cache-Control: no-cache'
+        ));
+        
+        $response = curl_exec($ch);
+        $http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        $curl_error = curl_error($ch);
+        curl_close($ch);
+        
+        if ($response === false || !empty($curl_error)) {
+            echo "data: " . json_encode(array('error' => 'Failed to connect to API: ' . $curl_error)) . "\n\n";
+            flush();
+            exit;
+        }
+        
+        if ($http_code !== 200) {
+            echo "data: " . json_encode(array(
+                'error' => 'API returned status code: ' . $http_code,
+                'debug' => array(
+                    'endpoint' => $api_endpoint,
+                    'token_set' => !empty($api_token),
+                    'response_preview' => substr($response, 0, 200)
+                )
+            )) . "\n\n";
+            flush();
+            exit;
+        }
+        
+        // Parse the complete response
+        $json_data = json_decode($response, true);
+        if (!$json_data || !isset($json_data['answer'])) {
+            echo "data: " . json_encode(array('error' => 'Invalid API response format')) . "\n\n";
+            flush();
+            exit;
+        }
+        
+        $answer = $json_data['answer'];
+        $sources_data = isset($json_data['sources']) ? $json_data['sources'] : array();
+        
+        // Now simulate streaming by sending words one by one
+        $words = explode(' ', $answer);
+        foreach ($words as $index => $word) {
+            if (trim($word)) {
+                $word_to_send = ($index > 0 ? ' ' : '') . $word;
+                
+                $chunk_data = json_encode(array(
+                    'type' => 'chunk',
+                    'content' => $word_to_send
+                ));
+                echo "data: " . $chunk_data . "\n\n";
+                flush();
+                
+                // Small delay for smooth streaming effect
+                usleep(50000); // 50ms delay
+            }
+        }
+        
+        // Send references if we have them
+        if (!empty($sources_data)) {
+            $references = array();
+            foreach ($sources_data as $source) {
+                $references[] = array(
+                    'title' => $source['dataSource'] ?? 'Reference',
+                    'url' => $source['path'] ?? '#',
+                    'description' => substr($source['content'] ?? '', 0, 150) . '...'
+                );
+            }
+            
+            echo "data: " . json_encode(array(
+                'type' => 'references',
+                'references' => $references
+            )) . "\n\n";
+            flush();
+        }
+        
+        // Send completion signal
+        echo "data: " . json_encode(array('type' => 'done')) . "\n\n";
+        flush();
+        exit;
     }
     
     /**
