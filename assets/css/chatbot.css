@@ -275,18 +275,7 @@
 }
 
 .chatbot-message-avatar {
-    width: 36px;
-    height: 36px;
-    border-radius: 18px;
-    background: #e5e7eb;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: var(--chatbot-text-secondary);
-    flex-shrink: 0;
-    font-weight: 600;
-    font-size: 11px;
-    text-transform: uppercase;
+    display: none;
 }
 
 .chatbot-message-user .chatbot-message-avatar {
