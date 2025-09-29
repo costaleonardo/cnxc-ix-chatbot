@@ -45,6 +45,7 @@ class Hello_Chatbot_Frontend {
             'nonce' => wp_create_nonce('hello_chatbot_nonce'),
             'position' => get_option('chatbot_position', 'bottom-right'),
             'welcomeMessage' => get_option('chatbot_welcome_message'),
+            'chatIconUrl' => HELLO_CHATBOT_PLUGIN_URL . 'assets/img/chat-icon.svg',
             'strings' => array(
                 'thinking' => __('Thinking...', 'hello-chatbot'),
                 'error' => __('Sorry, I encountered an error. Please try again.', 'hello-chatbot'),

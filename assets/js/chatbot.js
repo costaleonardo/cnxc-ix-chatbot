@@ -111,7 +111,7 @@
             return `
                 <!-- Chat Button -->
                 <button id="chatbot-button" class="chatbot-button" aria-label="Open chat">
-                    ${this.getButtonIcon()}
+                    <img src="${window.helloChatbot.chatIconUrl}" />
                 </button>
                 
                 <!-- Tooltip -->
