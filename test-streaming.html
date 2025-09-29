@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Streaming Response</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 30px;
+        }
+        .test-section {
+            margin-bottom: 30px;
+            padding: 20px;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            background: #fafafa;
+        }
+        .test-title {
+            font-weight: bold;
+            color: #555;
+            margin-bottom: 15px;
+            font-size: 18px;
+        }
+        .response-box {
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            padding: 15px;
+            min-height: 100px;
+            margin-top: 10px;
+            font-size: 14px;
+            line-height: 1.6;
+            white-space: pre-wrap;
+        }
+        .response-box.streaming {
+            border-color: #4CAF50;
+            background: #f9fff9;
+        }
+        .response-box.error {
+            border-color: #f44336;
+            background: #fff5f5;
+            color: #f44336;
+        }
+        button {
+            background: #2196F3;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background 0.3s;
+        }
+        button:hover {
+            background: #1976D2;
+        }
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        .status {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            margin-left: 10px;
+            font-weight: bold;
+        }
+        .status.active {
+            background: #4CAF50;
+            color: white;
+        }
+        .status.error {
+            background: #f44336;
+            color: white;
+        }
+        .status.waiting {
+            background: #FF9800;
+            color: white;
+        }
+        .typing-indicator {
+            display: inline-block;
+            margin-left: 10px;
+        }
+        .typing-indicator span {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #999;
+            margin: 0 2px;
+            animation: typing 1.4s infinite;
+        }
+        .typing-indicator span:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+        .typing-indicator span:nth-child(3) {
+            animation-delay: 0.4s;
+        }
+        @keyframes typing {
+            0%, 60%, 100% {
+                transform: translateY(0);
+                opacity: 0.5;
+            }
+            30% {
+                transform: translateY(-10px);
+                opacity: 1;
+            }
+        }
+        .info-box {
+            background: #E3F2FD;
+            border: 1px solid #2196F3;
+            border-radius: 6px;
+            padding: 15px;
+            margin-bottom: 20px;
+            color: #1565C0;
+        }
+        .info-box strong {
+            display: block;
+            margin-bottom: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚀 Streaming Response Test</h1>
+        
+        <div class="info-box">
+            <strong>ℹ️ How to test:</strong>
+            1. This page tests the streaming functionality directly without WordPress<br>
+            2. Click "Test Streaming" to see a simulated streaming response<br>
+            3. To test with WordPress, ensure the plugin is activated and visit any page with the chatbot widget
+        </div>
+
+        <div class="test-section">
+            <div class="test-title">
+                Direct API Test (Simulated)
+                <span id="status" class="status waiting">Ready</span>
+                <span id="typing" class="typing-indicator" style="display: none;">
+                    <span></span><span></span><span></span>
+                </span>
+            </div>
+            <button id="testBtn" onclick="testStreaming()">Test Streaming</button>
+            <div id="response" class="response-box">Click "Test Streaming" to see the response appear word by word...</div>
+        </div>
+
+        <div class="test-section">
+            <div class="test-title">Expected Behavior in WordPress</div>
+            <div class="response-box">
+                When integrated with WordPress and the KBot API:
+                
+                1. User sends a message
+                2. Loading indicator appears briefly
+                3. Response text starts appearing immediately, word by word
+                4. References appear after the main content
+                5. Automatic fallback to non-streaming if SSE fails
+                
+                The streaming provides a much better user experience, especially for longer responses.
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function testStreaming() {
+            const btn = document.getElementById('testBtn');
+            const response = document.getElementById('response');
+            const status = document.getElementById('status');
+            const typing = document.getElementById('typing');
+            
+            btn.disabled = true;
+            response.textContent = '';
+            response.classList.remove('error');
+            response.classList.add('streaming');
+            status.textContent = 'Streaming...';
+            status.className = 'status active';
+            typing.style.display = 'inline-block';
+            
+            // Simulate streaming response
+            const fullText = `Concentrix is a leading global provider of customer experience (CX) solutions and technology. We help the world's best brands improve their business performance and create better experiences for their customers.
+
+Our services include:
+• Customer support and engagement solutions
+• Digital transformation services
+• Data analytics and insights
+• Technology consulting and implementation
+• Business process optimization
+
+We combine human expertise with advanced technology to deliver personalized, efficient customer experiences that drive business growth. With operations in over 40 countries and more than 100,000 employees, we serve clients across multiple industries.`;
+            
+            const words = fullText.split(' ');
+            let currentIndex = 0;
+            let accumulatedText = '';
+            
+            const streamInterval = setInterval(() => {
+                if (currentIndex < words.length) {
+                    accumulatedText += (currentIndex > 0 ? ' ' : '') + words[currentIndex];
+                    response.textContent = accumulatedText;
+                    currentIndex++;
+                    
+                    // Auto-scroll if needed
+                    response.scrollTop = response.scrollHeight;
+                } else {
+                    clearInterval(streamInterval);
+                    btn.disabled = false;
+                    response.classList.remove('streaming');
+                    status.textContent = 'Complete';
+                    status.className = 'status active';
+                    typing.style.display = 'none';
+                    
+                    // Add references after a short delay
+                    setTimeout(() => {
+                        response.innerHTML += `
+                        
+<div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid #e0e0e0;">
+    <strong style="color: #666; font-size: 12px;">📚 References:</strong>
+    <ul style="margin: 10px 0 0 0; padding-left: 20px; font-size: 13px; color: #555;">
+        <li><a href="https://www.concentrix.com/about/" target="_blank" style="color: #2196F3;">About Concentrix</a></li>
+        <li><a href="https://www.concentrix.com/services/" target="_blank" style="color: #2196F3;">Our Services</a></li>
+        <li><a href="https://jobs.concentrix.com/" target="_blank" style="color: #2196F3;">Career Opportunities</a></li>
+    </ul>
+</div>`;
+                    }, 500);
+                }
+            }, 50); // Adjust speed as needed (50ms = ~20 words per second)
+        }
+    </script>
+</body>
+</html>

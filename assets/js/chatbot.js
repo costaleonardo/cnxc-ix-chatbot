@@ -574,8 +574,19 @@
             this.state.isLoading = true;
             this.setLoadingIndicator(true);
             
+            // Try streaming first, fallback to regular if it fails
+            const useStreaming = this.config.enableStreaming !== false;
+            
+            if (useStreaming) {
+                const streamSuccess = await this.sendStreamingMessage(text);
+                if (streamSuccess) {
+                    return; // Streaming succeeded
+                }
+                // Fall back to non-streaming if streaming failed
+            }
+            
             try {
-                // Send to server
+                // Send to server (non-streaming)
                 const formData = new FormData();
                 formData.append('action', 'hello_chatbot_send_message');
                 formData.append('nonce', this.config.nonce);
@@ -619,6 +630,171 @@
                 this.appendMessage(errorMsg);
             } finally {
                 this.state.isLoading = false;
+            }
+        }
+        
+        /**
+         * Send message using Server-Sent Events for streaming responses
+         */
+        async sendStreamingMessage(text) {
+            return new Promise((resolve) => {
+                try {
+                    // Build SSE URL with parameters
+                    const params = new URLSearchParams({
+                        action: 'hello_chatbot_stream_message',
+                        nonce: this.config.nonce,
+                        message: text,
+                        page_context: `On page: ${document.title} (${location.pathname})`
+                    });
+                    
+                    const eventSource = new EventSource(`${this.config.ajaxUrl}?${params}`);
+                    
+                    // Create assistant message that will be updated with chunks
+                    const assistantMsgId = 'msg-' + Date.now();
+                    const assistantMsg = {
+                        id: assistantMsgId,
+                        role: 'assistant',
+                        content: '',
+                        timestamp: this.getCurrentTime(),
+                        references: []
+                    };
+                    
+                    // Add empty message to state
+                    this.addMessage(assistantMsg);
+                    this.setLoadingIndicator(false);
+                    
+                    // Append message element to DOM
+                    const messageElement = this.appendMessage(assistantMsg);
+                    const contentElement = messageElement?.querySelector('.chatbot-message-content');
+                    
+                    let accumulatedContent = '';
+                    
+                    eventSource.onmessage = (event) => {
+                        try {
+                            // Handle empty or malformed data gracefully
+                            if (!event.data || event.data.trim() === '') {
+                                return;
+                            }
+                            
+                            const data = JSON.parse(event.data);
+                            
+                            if (data.error) {
+                                // Error occurred
+                                console.error('Streaming error:', data.error);
+                                eventSource.close();
+                                
+                                // Update message with error
+                                assistantMsg.content = this.config.strings.error;
+                                this.updateMessage(assistantMsgId, assistantMsg);
+                                if (contentElement) {
+                                    const textElement = contentElement.querySelector('.chatbot-message-text');
+                                    if (textElement) {
+                                        textElement.innerHTML = this.formatMessage(assistantMsg.content);
+                                    }
+                                }
+                                
+                                resolve(false); // Streaming failed
+                                return;
+                            }
+                            
+                            switch (data.type) {
+                                case 'chunk':
+                                    // Append new content chunk
+                                    accumulatedContent += data.content;
+                                    assistantMsg.content = accumulatedContent;
+                                    
+                                    // Update message in state
+                                    this.updateMessage(assistantMsgId, assistantMsg);
+                                    
+                                    // Update DOM directly for smooth streaming (like test file)
+                                    if (contentElement) {
+                                        const textElement = contentElement.querySelector('.chatbot-message-text');
+                                        if (textElement) {
+                                            textElement.innerHTML = this.formatMessage(accumulatedContent);
+                                            // Auto-scroll within message if needed
+                                            textElement.scrollTop = textElement.scrollHeight;
+                                        }
+                                    }
+                                    
+                                    // Scroll to bottom to show new content
+                                    this.scrollToBottom();
+                                    break;
+                                    
+                                case 'references':
+                                    // Update references
+                                    assistantMsg.references = data.references || [];
+                                    this.updateMessage(assistantMsgId, assistantMsg);
+                                    
+                                    // Add references to DOM (like test file shows references after content)
+                                    if (data.references?.length > 0) {
+                                        const referencesHTML = this.buildReferencesHTML(data.references);
+                                        
+                                        // Check if references container already exists
+                                        let refsContainer = messageElement?.querySelector('.chatbot-references');
+                                        if (!refsContainer) {
+                                            // Create references container if it doesn't exist
+                                            const textElement = contentElement.querySelector('.chatbot-message-text');
+                                            if (textElement) {
+                                                textElement.insertAdjacentHTML('afterend', referencesHTML);
+                                            }
+                                        } else {
+                                            // Update existing references
+                                            refsContainer.outerHTML = referencesHTML;
+                                        }
+                                        
+                                        this.scrollToBottom();
+                                    }
+                                    break;
+                                    
+                                case 'done':
+                                    // Streaming completed successfully
+                                    eventSource.close();
+                                    this.state.isLoading = false;
+                                    resolve(true); // Streaming succeeded
+                                    break;
+                            }
+                        } catch (e) {
+                            console.error('Error parsing SSE data:', e, 'Raw data:', event.data);
+                            // Don't fail the entire stream for one bad chunk
+                            // Continue processing other chunks
+                        }
+                    };
+                    
+                    eventSource.onerror = (error) => {
+                        console.error('SSE connection error:', error);
+                        eventSource.close();
+                        this.state.isLoading = false;
+                        resolve(false); // Streaming failed, will fallback
+                    };
+                    
+                    // Close connection on timeout (60 seconds)
+                    setTimeout(() => {
+                        if (eventSource.readyState !== EventSource.CLOSED) {
+                            eventSource.close();
+                            this.state.isLoading = false;
+                            resolve(false);
+                        }
+                    }, 60000);
+                    
+                } catch (error) {
+                    console.error('Failed to initialize streaming:', error);
+                    this.state.isLoading = false;
+                    resolve(false); // Streaming failed, will fallback
+                }
+            });
+        }
+        
+        /**
+         * Update a message in the state
+         */
+        updateMessage(messageId, updatedMessage) {
+            const session = this.state.currentSession;
+            if (session) {
+                const index = session.messages.findIndex(m => m.id === messageId);
+                if (index !== -1) {
+                    session.messages[index] = updatedMessage;
+                    this.sessionManager.saveSession(session);
+                }
             }
         }
         
