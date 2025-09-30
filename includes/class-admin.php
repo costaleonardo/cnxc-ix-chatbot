@@ -17,6 +17,9 @@ class Hello_Chatbot_Admin {
         // AJAX handler for testing API connection
         add_action('wp_ajax_hello_chatbot_test_connection', array($this, 'test_api_connection'));
         
+        // Debug endpoint to check settings
+        add_action('wp_ajax_hello_chatbot_debug_settings', array($this, 'debug_settings'));
+        
         // AJAX handlers for frontend chat messages (admin processes all AJAX requests)
         add_action('wp_ajax_hello_chatbot_send_message', array($this, 'handle_message'));
         add_action('wp_ajax_nopriv_hello_chatbot_send_message', array($this, 'handle_message'));
@@ -167,8 +170,6 @@ class Hello_Chatbot_Admin {
         $api_endpoint = get_option('chatbot_api_endpoint');
         $api_token = get_option('chatbot_api_token');
         
-        // Use the latest token provided by user for full functionality
-        $api_token = 'eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiIsIng1dCI6IkhTMjNiN0RvN1RjYVUxUm9MSHdwSXEyNFZZZyIsImtpZCI6IkhTMjNiN0RvN1RjYVUxUm9MSHdwSXEyNFZZZyJ9.eyJhdWQiOiI5NDM5ZjYxNS1mZTFiLTRhZjEtOWM1Yy1iZjdiZDdhODI3NzQiLCJpc3MiOiJodHRwczovL3N0cy53aW5kb3dzLm5ldC81OTllNTFkNi0yZjhjLTQzNDctOGU1OS0xZjc5NWE1MWE5OGMvIiwiaWF0IjoxNzU5MTc0ODc1LCJuYmYiOjE3NTkxNzQ4NzUsImV4cCI6MTc1OTE3ODc3NSwiYWlvIjoiazJSZ1lGaGtNeU8vZU9YYWxCcjJnRFd2T2YrOUFBQT0iLCJhcHBpZCI6Ijk0MzlmNjE1LWZlMWItNGFmMS05YzVjLWJmN2JkN2E4Mjc3NCIsImFwcGlkYWNyIjoiMSIsImlkcCI6Imh0dHBzOi8vc3RzLndpbmRvd3MubmV0LzU5OWU1MWQ2LTJmOGMtNDM0Ny04ZTU5LTFmNzk1YTUxYTk4Yy8iLCJvaWQiOiJiYWZmYWY5MS03ZGZlLTQ2YTctODJiNi04ZTViNjUyODI3MmYiLCJyaCI6IjEuQVE0QTFsR2VXWXd2UjBPT1dSOTVXbEdwakJYMk9aUWJfdkZLbkZ5X2U5ZW9KM1FPQUFBT0FBLiIsInN1YiI6ImJhZmZhZjkxLTdkZmUtNDZhNy04MmI2LThlNWI2NTI4MjcyZiIsInRpZCI6IjU5OWU1MWQ2LTJmOGMtNDM0Ny04ZTU5LTFmNzk1YTUxYTk4YyIsInV0aSI6InBXekxBSzktZVV1dWRGUGdRazdBQVEiLCJ2ZXIiOiIxLjAiLCJ4bXNfZnRkIjoiVi1pMTZYTmkwR09DeVBvc05RQU12LTJKN3BibzVkUmhxMkF0ZVNtYm04MEJkWE5sWVhOMExXUnpiWE0ifQ.FUtAppCM4Lle-QmuME8fZ8cTuJwngO6a8oMiFCVYHssvhQYo5zsDUF-6QPMm7LMUCZvhokOAauJ32u-bi5zs0WWPQRaqLZD5ZvhOkm84IhO6-V6G3Gjmcr345g3puRv-Fe6YN9E5dMWOGI_wvaV_S6v5BehSHOGTkZgoT0ReQ5msE1p76RkWZbcW4G7_5-mysZ_ORXcxH_oJVUqyWWDKjAo80bZ4ImpFVG-9eab__GS884FQJresCNSbkoeznk9gkWTm79gFvV9UjaRNqhJbSwnP_wIE3PsVWST1LXzcocCaqVNx_e8KltXNBt0O2t2vivkuksKYxt5ujaI2HA8l5Q';
         
         if (empty($api_endpoint)) {
             wp_send_json_error('API endpoint not configured');
@@ -254,8 +255,9 @@ class Hello_Chatbot_Admin {
         $api_endpoint = get_option('chatbot_api_endpoint');
         $api_token = get_option('chatbot_api_token');
         
-        // Use the latest token provided by user for full functionality
-        $api_token = 'eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiIsIng1dCI6IkhTMjNiN0RvN1RjYVUxUm9MSHdwSXEyNFZZZyIsImtpZCI6IkhTMjNiN0RvN1RjYVUxUm9MSHdwSXEyNFZZZyJ9.eyJhdWQiOiI5NDM5ZjYxNS1mZTFiLTRhZjEtOWM1Yy1iZjdiZDdhODI3NzQiLCJpc3MiOiJodHRwczovL3N0cy53aW5kb3dzLm5ldC81OTllNTFkNi0yZjhjLTQzNDctOGU1OS0xZjc5NWE1MWE5OGMvIiwiaWF0IjoxNzU5MTc0ODc1LCJuYmYiOjE3NTkxNzQ4NzUsImV4cCI6MTc1OTE3ODc3NSwiYWlvIjoiazJSZ1lGaGtNeU8vZU9YYWxCcjJnRFd2T2YrOUFBQT0iLCJhcHBpZCI6Ijk0MzlmNjE1LWZlMWItNGFmMS05YzVjLWJmN2JkN2E4Mjc3NCIsImFwcGlkYWNyIjoiMSIsImlkcCI6Imh0dHBzOi8vc3RzLndpbmRvd3MubmV0LzU5OWU1MWQ2LTJmOGMtNDM0Ny04ZTU5LTFmNzk1YTUxYTk4Yy8iLCJvaWQiOiJiYWZmYWY5MS03ZGZlLTQ2YTctODJiNi04ZTViNjUyODI3MmYiLCJyaCI6IjEuQVE0QTFsR2VXWXd2UjBPT1dSOTVXbEdwakJYMk9aUWJfdkZLbkZ5X2U5ZW9KM1FPQUFBT0FBLiIsInN1YiI6ImJhZmZhZjkxLTdkZmUtNDZhNy04MmI2LThlNWI2NTI4MjcyZiIsInRpZCI6IjU5OWU1MWQ2LTJmOGMtNDM0Ny04ZTU5LTFmNzk1YTUxYTk4YyIsInV0aSI6InBXekxBSzktZVV1dWRGUGdRazdBQVEiLCJ2ZXIiOiIxLjAiLCJ4bXNfZnRkIjoiVi1pMTZYTmkwR09DeVBvc05RQU12LTJKN3BibzVkUmhxMkF0ZVNtYm04MEJkWE5sWVhOMExXUnpiWE0ifQ.FUtAppCM4Lle-QmuME8fZ8cTuJwngO6a8oMiFCVYHssvhQYo5zsDUF-6QPMm7LMUCZvhokOAauJ32u-bi5zs0WWPQRaqLZD5ZvhOkm84IhO6-V6G3Gjmcr345g3puRv-Fe6YN9E5dMWOGI_wvaV_S6v5BehSHOGTkZgoT0ReQ5msE1p76RkWZbcW4G7_5-mysZ_ORXcxH_oJVUqyWWDKjAo80bZ4ImpFVG-9eab__GS884FQJresCNSbkoeznk9gkWTm79gFvV9UjaRNqhJbSwnP_wIE3PsVWST1LXzcocCaqVNx_e8KltXNBt0O2t2vivkuksKYxt5ujaI2HA8l5Q';
+        // Log current settings for debugging
+        error_log("Hello Chatbot - API Endpoint: " . $api_endpoint);
+        error_log("Hello Chatbot - API Token Length: " . strlen($api_token));
         
         if (empty($api_endpoint)) {
             wp_send_json_error('Chatbot is not configured');
@@ -428,8 +430,9 @@ class Hello_Chatbot_Admin {
         $api_endpoint = get_option('chatbot_api_endpoint');
         $api_token = get_option('chatbot_api_token');
         
-        // Use the latest token provided by user for full functionality
-        $api_token = 'eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiIsIng1dCI6IkhTMjNiN0RvN1RjYVUxUm9MSHdwSXEyNFZZZyIsImtpZCI6IkhTMjNiN0RvN1RjYVUxUm9MSHdwSXEyNFZZZyJ9.eyJhdWQiOiI5NDM5ZjYxNS1mZTFiLTRhZjEtOWM1Yy1iZjdiZDdhODI3NzQiLCJpc3MiOiJodHRwczovL3N0cy53aW5kb3dzLm5ldC81OTllNTFkNi0yZjhjLTQzNDctOGU1OS0xZjc5NWE1MWE5OGMvIiwiaWF0IjoxNzU5MTc0ODc1LCJuYmYiOjE3NTkxNzQ4NzUsImV4cCI6MTc1OTE3ODc3NSwiYWlvIjoiazJSZ1lGaGtNeU8vZU9YYWxCcjJnRFd2T2YrOUFBQT0iLCJhcHBpZCI6Ijk0MzlmNjE1LWZlMWItNGFmMS05YzVjLWJmN2JkN2E4Mjc3NCIsImFwcGlkYWNyIjoiMSIsImlkcCI6Imh0dHBzOi8vc3RzLndpbmRvd3MubmV0LzU5OWU1MWQ2LTJmOGMtNDM0Ny04ZTU5LTFmNzk1YTUxYTk4Yy8iLCJvaWQiOiJiYWZmYWY5MS03ZGZlLTQ2YTctODJiNi04ZTViNjUyODI3MmYiLCJyaCI6IjEuQVE0QTFsR2VXWXd2UjBPT1dSOTVXbEdwakJYMk9aUWJfdkZLbkZ5X2U5ZW9KM1FPQUFBT0FBLiIsInN1YiI6ImJhZmZhZjkxLTdkZmUtNDZhNy04MmI2LThlNWI2NTI4MjcyZiIsInRpZCI6IjU5OWU1MWQ2LTJmOGMtNDM0Ny04ZTU5LTFmNzk1YTUxYTk4YyIsInV0aSI6InBXekxBSzktZVV1dWRGUGdRazdBQVEiLCJ2ZXIiOiIxLjAiLCJ4bXNfZnRkIjoiVi1pMTZYTmkwR09DeVBvc05RQU12LTJKN3BibzVkUmhxMkF0ZVNtYm04MEJkWE5sWVhOMExXUnpiWE0ifQ.FUtAppCM4Lle-QmuME8fZ8cTuJwngO6a8oMiFCVYHssvhQYo5zsDUF-6QPMm7LMUCZvhokOAauJ32u-bi5zs0WWPQRaqLZD5ZvhOkm84IhO6-V6G3Gjmcr345g3puRv-Fe6YN9E5dMWOGI_wvaV_S6v5BehSHOGTkZgoT0ReQ5msE1p76RkWZbcW4G7_5-mysZ_ORXcxH_oJVUqyWWDKjAo80bZ4ImpFVG-9eab__GS884FQJresCNSbkoeznk9gkWTm79gFvV9UjaRNqhJbSwnP_wIE3PsVWST1LXzcocCaqVNx_e8KltXNBt0O2t2vivkuksKYxt5ujaI2HA8l5Q';
+        // Log current settings for debugging
+        error_log("Hello Chatbot Streaming - API Endpoint: " . $api_endpoint);
+        error_log("Hello Chatbot Streaming - API Token Length: " . strlen($api_token));
         
         if (empty($api_endpoint)) {
             echo "data: " . json_encode(array('error' => 'Chatbot is not configured')) . "\n\n";
@@ -609,5 +612,26 @@ class Hello_Chatbot_Admin {
                 )
             )
         );
+    }
+    
+    /**
+     * Debug settings endpoint
+     */
+    public function debug_settings() {
+        // Check permissions
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error('Insufficient permissions');
+        }
+        
+        $settings = array(
+            'api_endpoint' => get_option('chatbot_api_endpoint'),
+            'api_token_length' => strlen(get_option('chatbot_api_token')),
+            'api_token_preview' => substr(get_option('chatbot_api_token'), 0, 50) . '...',
+            'enabled' => get_option('chatbot_enabled'),
+            'welcome_message' => get_option('chatbot_welcome_message'),
+            'position' => get_option('chatbot_position')
+        );
+        
+        wp_send_json_success($settings);
     }
 }

@@ -275,7 +275,8 @@
                             <span class="chatbot-message-time">${this.getCurrentTime()}</span>
                         </div>
                         <div class="chatbot-thinking-dots">
-                            <span>${this.config.strings.thinking}</span>
+                            <span class="chatbot-thinking-circle"></span>
+                            <span class="chatbot-thinking-text">Thinking</span>
                             <span class="dot">.</span>
                             <span class="dot">.</span>
                             <span class="dot">.</span>
@@ -659,15 +660,10 @@
                         references: []
                     };
                     
-                    // Add empty message to state
-                    this.addMessage(assistantMsg);
-                    this.setLoadingIndicator(false);
-                    
-                    // Append message element to DOM
-                    const messageElement = this.appendMessage(assistantMsg);
-                    const contentElement = messageElement?.querySelector('.chatbot-message-content');
-                    
                     let accumulatedContent = '';
+                    let messageElement = null;
+                    let contentElement = null;
+                    let firstChunkReceived = false;
                     
                     eventSource.onmessage = (event) => {
                         try {
@@ -683,13 +679,25 @@
                                 console.error('Streaming error:', data.error);
                                 eventSource.close();
                                 
-                                // Update message with error
-                                assistantMsg.content = this.config.strings.error;
-                                this.updateMessage(assistantMsgId, assistantMsg);
-                                if (contentElement) {
-                                    const textElement = contentElement.querySelector('.chatbot-message-text');
-                                    if (textElement) {
-                                        textElement.innerHTML = this.formatMessage(assistantMsg.content);
+                                // Remove thinking indicator if still showing
+                                if (!firstChunkReceived) {
+                                    this.setLoadingIndicator(false);
+                                    
+                                    // Add error message to state
+                                    assistantMsg.content = this.config.strings.error;
+                                    this.addMessage(assistantMsg);
+                                    
+                                    // Create and append error message element
+                                    messageElement = this.appendMessage(assistantMsg);
+                                } else {
+                                    // Update existing message with error
+                                    assistantMsg.content = this.config.strings.error;
+                                    this.updateMessage(assistantMsgId, assistantMsg);
+                                    if (contentElement) {
+                                        const textElement = contentElement.querySelector('.chatbot-message-text');
+                                        if (textElement) {
+                                            textElement.innerHTML = this.formatMessage(assistantMsg.content);
+                                        }
                                     }
                                 }
                                 
@@ -699,6 +707,19 @@
                             
                             switch (data.type) {
                                 case 'chunk':
+                                    // On first chunk, remove thinking indicator and create message
+                                    if (!firstChunkReceived) {
+                                        firstChunkReceived = true;
+                                        this.setLoadingIndicator(false);
+                                        
+                                        // Add message to state
+                                        this.addMessage(assistantMsg);
+                                        
+                                        // Create and append message element
+                                        messageElement = this.appendMessage(assistantMsg);
+                                        contentElement = messageElement?.querySelector('.chatbot-message-content');
+                                    }
+                                    
                                     // Append new content chunk
                                     accumulatedContent += data.content;
                                     assistantMsg.content = accumulatedContent;
@@ -750,6 +771,12 @@
                                     // Streaming completed successfully
                                     eventSource.close();
                                     this.state.isLoading = false;
+                                    
+                                    // If no chunks were received, remove thinking indicator
+                                    if (!firstChunkReceived) {
+                                        this.setLoadingIndicator(false);
+                                    }
+                                    
                                     resolve(true); // Streaming succeeded
                                     break;
                             }
@@ -764,6 +791,12 @@
                         console.error('SSE connection error:', error);
                         eventSource.close();
                         this.state.isLoading = false;
+                        
+                        // Remove thinking indicator if still showing
+                        if (!firstChunkReceived) {
+                            this.setLoadingIndicator(false);
+                        }
+                        
                         resolve(false); // Streaming failed, will fallback
                     };
                     
@@ -772,6 +805,12 @@
                         if (eventSource.readyState !== EventSource.CLOSED) {
                             eventSource.close();
                             this.state.isLoading = false;
+                            
+                            // Remove thinking indicator if still showing
+                            if (!firstChunkReceived) {
+                                this.setLoadingIndicator(false);
+                            }
+                            
                             resolve(false);
                         }
                     }, 60000);
@@ -779,6 +818,7 @@
                 } catch (error) {
                     console.error('Failed to initialize streaming:', error);
                     this.state.isLoading = false;
+                    this.setLoadingIndicator(false); // Remove thinking indicator on init error
                     resolve(false); // Streaming failed, will fallback
                 }
             });

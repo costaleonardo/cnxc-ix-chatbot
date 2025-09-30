@@ -470,7 +470,41 @@
 .chatbot-thinking .chatbot-thinking-dots {
     display: flex;
     align-items: center;
-    gap: 4px;
+    gap: 6px;
+    color: var(--chatbot-text);
+    font-size: 14px;
+}
+
+/* Blue circle indicator */
+.chatbot-thinking-circle {
+    width: 12px;
+    height: 12px;
+    background-color: #007bff;
+    border-radius: 50%;
+    display: inline-block;
+    animation: pulse 1.5s ease-in-out infinite;
+    flex-shrink: 0;
+}
+
+/* Thinking text */
+.chatbot-thinking-text {
+    color: var(--chatbot-text);
+    margin-right: 2px;
+}
+
+@keyframes pulse {
+    0% {
+        transform: scale(1);
+        opacity: 1;
+    }
+    50% {
+        transform: scale(1.2);
+        opacity: 0.8;
+    }
+    100% {
+        transform: scale(1);
+        opacity: 1;
+    }
 }
 
 .chatbot-thinking-dots .dot {
@@ -479,12 +513,16 @@
     backface-visibility: hidden;
 }
 
-.chatbot-thinking-dots .dot:nth-child(2) {
+.chatbot-thinking-dots .dot:nth-child(3) {
     animation-delay: 0.2s;
 }
 
-.chatbot-thinking-dots .dot:nth-child(3) {
+.chatbot-thinking-dots .dot:nth-child(4) {
     animation-delay: 0.4s;
+}
+
+.chatbot-thinking-dots .dot:nth-child(5) {
+    animation-delay: 0.6s;
 }
 
 @keyframes thinking {
