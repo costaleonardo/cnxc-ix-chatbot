@@ -1224,8 +1224,27 @@
             
             processedContent = processedLines.join('\n');
             
-            // Line breaks (but not within HTML tags)
-            processedContent = processedContent.replace(/\n/g, '<br>');
+            // Convert content to paragraphs instead of line breaks
+            // Split on double newlines for paragraph breaks, single newlines become spaces within paragraphs
+            const paragraphs = processedContent.split(/\n\n+/).filter(p => p.trim().length > 0);
+            
+            if (paragraphs.length > 1) {
+                // Multiple paragraphs - wrap each in <p> tags
+                processedContent = paragraphs.map(paragraph => {
+                    const cleanParagraph = paragraph.replace(/\n/g, ' ').trim();
+                    return cleanParagraph ? `<p>${cleanParagraph}</p>` : '';
+                }).filter(p => p.length > 0).join('');
+            } else if (paragraphs.length === 1) {
+                // Single paragraph - wrap in <p> if it doesn't already contain block elements
+                const hasBlockElements = /<(h[1-6]|ul|ol|pre|blockquote|div)>/i.test(processedContent);
+                if (!hasBlockElements) {
+                    const cleanContent = processedContent.replace(/\n/g, ' ').trim();
+                    processedContent = cleanContent ? `<p>${cleanContent}</p>` : '';
+                } else {
+                    // Contains block elements, just clean up newlines
+                    processedContent = processedContent.replace(/\n/g, ' ');
+                }
+            }
             
             // Restore code blocks
             codeBlocks.forEach((block, index) => {

@@ -324,7 +324,7 @@
     color: #2A2B2C;
     word-wrap: break-word;
     line-height: 1.6;
-    white-space: pre-wrap;
+    /* white-space: pre-wrap; */
     /* border: 1px solid var(--chatbot-border); */
 }
 
@@ -455,6 +455,16 @@
 
 .chatbot-message-user .chatbot-message-text pre code {
     color: white;
+}
+
+/* Paragraph Styles */
+.chatbot-message-text p {
+    margin: 0 0 1em 0;
+    line-height: 1.5;
+}
+
+.chatbot-message-text p:last-child {
+    margin-bottom: 0;
 }
 
 /* Fix for nested elements spacing */
