@@ -73,3 +73,89 @@
     border-radius: 50%;
     animation: spin 1s linear infinite;
 }
+
+/* OAuth2 Settings */
+.oauth-settings {
+    transition: opacity 0.3s, visibility 0.3s;
+}
+
+#test-oauth,
+#refresh-token {
+    margin-top: 10px;
+    margin-right: 10px;
+}
+
+#oauth-test-result {
+    display: inline-block;
+    margin-left: 10px;
+    font-weight: 500;
+}
+
+#oauth-test-result.success {
+    color: #46b450;
+}
+
+#oauth-test-result.error {
+    color: #dc3232;
+}
+
+/* Token Status Display */
+#oauth-status {
+    padding: 10px;
+    background: #f5f5f5;
+    border-left: 4px solid #ccc;
+    border-radius: 2px;
+}
+
+.token-status-valid {
+    color: #46b450;
+    font-weight: 500;
+}
+
+.token-status-expired {
+    color: #dc3232;
+    font-weight: 500;
+}
+
+.token-status-expiring_soon {
+    color: #ffb900;
+    font-weight: 500;
+}
+
+.token-status-none {
+    color: #666;
+    font-style: italic;
+}
+
+/* OAuth2 input fields */
+.form-table input[type="text"]#chatbot_oauth_client_id,
+.form-table input[type="password"]#chatbot_oauth_client_secret,
+.form-table input[type="text"]#chatbot_oauth_tenant_id,
+.form-table input[type="text"]#chatbot_oauth_scope,
+.form-table input[type="url"]#chatbot_oauth_endpoint {
+    width: 100%;
+    max-width: 500px;
+    font-family: 'Consolas', 'Monaco', monospace;
+    font-size: 13px;
+}
+
+/* Checkbox alignment */
+#chatbot_use_oauth {
+    margin-right: 5px;
+}
+
+/* OAuth2 section divider */
+.oauth-settings td {
+    background-color: #fafafa;
+    position: relative;
+}
+
+.oauth-settings:first-of-type td:before {
+    content: "OAuth2 Configuration";
+    position: absolute;
+    top: -20px;
+    left: 0;
+    font-weight: 600;
+    color: #23282d;
+    font-size: 14px;
+}

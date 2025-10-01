@@ -17,6 +17,12 @@ class Hello_Chatbot_Admin {
         // AJAX handler for testing API connection
         add_action('wp_ajax_hello_chatbot_test_connection', array($this, 'test_api_connection'));
         
+        // AJAX handler for testing OAuth2 connection
+        add_action('wp_ajax_hello_chatbot_test_oauth', array($this, 'test_oauth_connection'));
+        
+        // AJAX handler for refreshing OAuth2 token
+        add_action('wp_ajax_hello_chatbot_refresh_token', array($this, 'refresh_token_ajax'));
+        
         // Debug endpoint to check settings
         add_action('wp_ajax_hello_chatbot_debug_settings', array($this, 'debug_settings'));
         
@@ -45,6 +51,14 @@ class Hello_Chatbot_Admin {
         register_setting('hello_chatbot_settings', 'chatbot_api_token');
         register_setting('hello_chatbot_settings', 'chatbot_welcome_message');
         register_setting('hello_chatbot_settings', 'chatbot_position');
+        
+        // OAuth2 settings
+        register_setting('hello_chatbot_settings', 'chatbot_use_oauth');
+        register_setting('hello_chatbot_settings', 'chatbot_oauth_client_id');
+        register_setting('hello_chatbot_settings', 'chatbot_oauth_client_secret');
+        register_setting('hello_chatbot_settings', 'chatbot_oauth_tenant_id');
+        register_setting('hello_chatbot_settings', 'chatbot_oauth_scope');
+        register_setting('hello_chatbot_settings', 'chatbot_oauth_endpoint');
     }
     
     public function enqueue_assets($hook) {
@@ -107,15 +121,106 @@ class Hello_Chatbot_Admin {
                     
                     <tr>
                         <th scope="row">
-                            <label for="chatbot_api_token"><?php _e('Bearer Token', 'hello-chatbot'); ?></label>
+                            <label for="chatbot_use_oauth"><?php _e('Use OAuth2 Auto-Refresh', 'hello-chatbot'); ?></label>
+                        </th>
+                        <td>
+                            <input type="checkbox" id="chatbot_use_oauth" name="chatbot_use_oauth" 
+                                   value="1" <?php checked(get_option('chatbot_use_oauth'), 1); ?> />
+                            <p class="description"><?php _e('Enable automatic token refresh using OAuth2 client credentials.', 'hello-chatbot'); ?></p>
+                            <div id="oauth-status" style="margin-top: 10px;">
+                                <?php 
+                                $token_manager = Hello_Chatbot_Token_Manager::get_instance();
+                                $token_status = $token_manager->get_token_status();
+                                ?>
+                                <strong><?php _e('Token Status:', 'hello-chatbot'); ?></strong>
+                                <span class="token-status-<?php echo esc_attr($token_status['status']); ?>">
+                                    <?php echo esc_html($token_status['message']); ?>
+                                    <?php if ($token_status['expires_at']): ?>
+                                        (<?php echo esc_html($token_status['status'] === 'expired' ? $token_status['expired_ago'] : 'Expires in ' . $token_status['expires_in']); ?>)
+                                    <?php endif; ?>
+                                </span>
+                            </div>
+                        </td>
+                    </tr>
+                    
+                    <tr class="oauth-settings" style="<?php echo get_option('chatbot_use_oauth') ? '' : 'display:none;'; ?>">
+                        <th scope="row">
+                            <label for="chatbot_oauth_client_id"><?php _e('OAuth2 Client ID', 'hello-chatbot'); ?></label>
+                        </th>
+                        <td>
+                            <input type="text" id="chatbot_oauth_client_id" name="chatbot_oauth_client_id" 
+                                   value="<?php echo esc_attr(get_option('chatbot_oauth_client_id')); ?>" 
+                                   class="large-text" />
+                            <p class="description"><?php _e('The OAuth2 application client ID.', 'hello-chatbot'); ?></p>
+                        </td>
+                    </tr>
+                    
+                    <tr class="oauth-settings" style="<?php echo get_option('chatbot_use_oauth') ? '' : 'display:none;'; ?>">
+                        <th scope="row">
+                            <label for="chatbot_oauth_client_secret"><?php _e('OAuth2 Client Secret', 'hello-chatbot'); ?></label>
+                        </th>
+                        <td>
+                            <input type="password" id="chatbot_oauth_client_secret" name="chatbot_oauth_client_secret" 
+                                   value="<?php echo esc_attr(get_option('chatbot_oauth_client_secret')); ?>" 
+                                   class="large-text" />
+                            <p class="description"><?php _e('The OAuth2 application client secret.', 'hello-chatbot'); ?></p>
+                        </td>
+                    </tr>
+                    
+                    <tr class="oauth-settings" style="<?php echo get_option('chatbot_use_oauth') ? '' : 'display:none;'; ?>">
+                        <th scope="row">
+                            <label for="chatbot_oauth_tenant_id"><?php _e('OAuth2 Tenant ID', 'hello-chatbot'); ?></label>
+                        </th>
+                        <td>
+                            <input type="text" id="chatbot_oauth_tenant_id" name="chatbot_oauth_tenant_id" 
+                                   value="<?php echo esc_attr(get_option('chatbot_oauth_tenant_id')); ?>" 
+                                   class="large-text" />
+                            <p class="description"><?php _e('The Azure/Microsoft tenant ID.', 'hello-chatbot'); ?></p>
+                        </td>
+                    </tr>
+                    
+                    <tr class="oauth-settings" style="<?php echo get_option('chatbot_use_oauth') ? '' : 'display:none;'; ?>">
+                        <th scope="row">
+                            <label for="chatbot_oauth_scope"><?php _e('OAuth2 Scope', 'hello-chatbot'); ?></label>
+                        </th>
+                        <td>
+                            <input type="text" id="chatbot_oauth_scope" name="chatbot_oauth_scope" 
+                                   value="<?php echo esc_attr(get_option('chatbot_oauth_scope')); ?>" 
+                                   class="large-text" />
+                            <p class="description"><?php _e('The OAuth2 scope (e.g., client_id/.default).', 'hello-chatbot'); ?></p>
+                        </td>
+                    </tr>
+                    
+                    <tr class="oauth-settings" style="<?php echo get_option('chatbot_use_oauth') ? '' : 'display:none;'; ?>">
+                        <th scope="row">
+                            <label for="chatbot_oauth_endpoint"><?php _e('OAuth2 Token Endpoint', 'hello-chatbot'); ?></label>
+                        </th>
+                        <td>
+                            <input type="url" id="chatbot_oauth_endpoint" name="chatbot_oauth_endpoint" 
+                                   value="<?php echo esc_attr(get_option('chatbot_oauth_endpoint')); ?>" 
+                                   class="large-text" />
+                            <p class="description"><?php _e('The OAuth2 token endpoint URL.', 'hello-chatbot'); ?></p>
+                            <button type="button" id="test-oauth" class="button button-secondary">
+                                <?php _e('Test OAuth2', 'hello-chatbot'); ?>
+                            </button>
+                            <button type="button" id="refresh-token" class="button button-secondary">
+                                <?php _e('Refresh Token Now', 'hello-chatbot'); ?>
+                            </button>
+                            <span id="oauth-test-result"></span>
+                        </td>
+                    </tr>
+                    
+                    <tr>
+                        <th scope="row">
+                            <label for="chatbot_api_token"><?php _e('Manual Bearer Token', 'hello-chatbot'); ?></label>
                         </th>
                         <td>
                             <input type="password" id="chatbot_api_token" name="chatbot_api_token" 
                                    value="<?php echo esc_attr(get_option('chatbot_api_token')); ?>" 
                                    class="large-text" />
-                            <p class="description"><?php _e('Authentication token for the API.', 'hello-chatbot'); ?></p>
+                            <p class="description"><?php _e('Manual authentication token (used as fallback if OAuth2 fails).', 'hello-chatbot'); ?></p>
                             <button type="button" id="test-connection" class="button button-secondary">
-                                <?php _e('Test Connection', 'hello-chatbot'); ?>
+                                <?php _e('Test API Connection', 'hello-chatbot'); ?>
                             </button>
                             <span id="test-result"></span>
                         </td>
@@ -156,6 +261,59 @@ class Hello_Chatbot_Admin {
         <?php
     }
     
+    /**
+     * Test OAuth2 connection AJAX handler
+     */
+    public function test_oauth_connection() {
+        // Verify nonce
+        if (!wp_verify_nonce($_POST['nonce'], 'hello_chatbot_admin_nonce')) {
+            wp_send_json_error('Invalid nonce');
+        }
+        
+        // Check permissions
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error('Insufficient permissions');
+        }
+        
+        $token_manager = Hello_Chatbot_Token_Manager::get_instance();
+        $result = $token_manager->test_oauth_connection();
+        
+        if ($result['success']) {
+            wp_send_json_success($result);
+        } else {
+            wp_send_json_error($result['message']);
+        }
+    }
+    
+    /**
+     * Refresh token AJAX handler
+     */
+    public function refresh_token_ajax() {
+        // Verify nonce
+        if (!wp_verify_nonce($_POST['nonce'], 'hello_chatbot_admin_nonce')) {
+            wp_send_json_error('Invalid nonce');
+        }
+        
+        // Check permissions
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error('Insufficient permissions');
+        }
+        
+        $token_manager = Hello_Chatbot_Token_Manager::get_instance();
+        $token_manager->clear_token_cache(); // Clear cache to force refresh
+        $new_token = $token_manager->refresh_token();
+        
+        if ($new_token !== false) {
+            $token_status = $token_manager->get_token_status();
+            wp_send_json_success(array(
+                'message' => 'Token refreshed successfully!',
+                'status' => $token_status
+            ));
+        } else {
+            wp_send_json_error('Failed to refresh token. Check your OAuth2 credentials.');
+        }
+    }
+    
     public function test_api_connection() {
         // Verify nonce
         if (!wp_verify_nonce($_POST['nonce'], 'hello_chatbot_admin_nonce')) {
@@ -168,7 +326,10 @@ class Hello_Chatbot_Admin {
         }
         
         $api_endpoint = get_option('chatbot_api_endpoint');
-        $api_token = get_option('chatbot_api_token');
+        
+        // Use Token Manager to get a valid token
+        $token_manager = Hello_Chatbot_Token_Manager::get_instance();
+        $api_token = $token_manager->get_valid_token();
         
         
         if (empty($api_endpoint)) {
@@ -253,14 +414,22 @@ class Hello_Chatbot_Admin {
         
         // Get API settings
         $api_endpoint = get_option('chatbot_api_endpoint');
-        $api_token = get_option('chatbot_api_token');
+        
+        // Use Token Manager to get a valid token
+        $token_manager = Hello_Chatbot_Token_Manager::get_instance();
+        $api_token = $token_manager->get_valid_token();
         
         // Log current settings for debugging
         error_log("Hello Chatbot - API Endpoint: " . $api_endpoint);
         error_log("Hello Chatbot - API Token Length: " . strlen($api_token));
+        error_log("Hello Chatbot - Token obtained via: " . (get_option('chatbot_use_oauth') ? 'OAuth2' : 'Manual'));
         
         if (empty($api_endpoint)) {
             wp_send_json_error('Chatbot is not configured');
+        }
+        
+        if (empty($api_token)) {
+            wp_send_json_error('Unable to obtain authentication token');
         }
         
         // Prepare API request
@@ -428,14 +597,23 @@ class Hello_Chatbot_Admin {
         
         // Get API settings
         $api_endpoint = get_option('chatbot_api_endpoint');
-        $api_token = get_option('chatbot_api_token');
+        
+        // Use Token Manager to get a valid token
+        $token_manager = Hello_Chatbot_Token_Manager::get_instance();
+        $api_token = $token_manager->get_valid_token();
         
         // Log current settings for debugging
         error_log("Hello Chatbot Streaming - API Endpoint: " . $api_endpoint);
         error_log("Hello Chatbot Streaming - API Token Length: " . strlen($api_token));
+        error_log("Hello Chatbot Streaming - Token obtained via: " . (get_option('chatbot_use_oauth') ? 'OAuth2' : 'Manual'));
         
         if (empty($api_endpoint)) {
             echo "data: " . json_encode(array('error' => 'Chatbot is not configured')) . "\n\n";
+            exit;
+        }
+        
+        if (empty($api_token)) {
+            echo "data: " . json_encode(array('error' => 'Unable to obtain authentication token')) . "\n\n";
             exit;
         }
         
