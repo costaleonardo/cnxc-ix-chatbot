@@ -24,7 +24,8 @@
                 currentSession: null,
                 sessions: [],
                 viewMode: 'chat', // 'chat' or 'list' - controls which view is shown
-                showTooltip: false // Will be set in init() based on page load count and other conditions
+                showTooltip: false, // Will be set in init() based on page load count and other conditions
+                showInfoTooltip: false // For info button tooltip
             };
             
             this.elements = {};
@@ -144,9 +145,21 @@
                         </div>
                         <div class="chatbot-controls">
                             ${this.state.viewMode === 'chat' ? `
-                                <button id="chatbot-info-btn" class="chatbot-control-btn" aria-label="Info">
-                                    ${this.getInfoIcon()}
-                                </button>
+                                <div class="chatbot-info-wrapper">
+                                    <button id="chatbot-info-btn" class="chatbot-control-btn" aria-label="Info">
+                                        ${this.getInfoIcon()}
+                                    </button>
+                                    <!-- Info Tooltip -->
+                                    <div id="chatbot-info-tooltip" class="chatbot-info-tooltip ${this.state.showInfoTooltip ? 'show' : ''}">
+                                        <div class="chatbot-info-tooltip-header">
+                                            <h3>Powered by iX Hello</h3>
+                                        </div>
+                                        <div class="chatbot-info-tooltip-content">
+                                            <p>This chatbot is powered by iX Hello to provide you with the answers you need to know about Concentrix.</p>
+                                            <a href="https://cnxcdev.wpengine.com/ix-hello/" target="_blank" class="chatbot-info-tooltip-link">Learn more about iX Hello</a>
+                                        </div>
+                                    </div>
+                                </div>
                                 <button id="chatbot-refresh-btn" class="chatbot-control-btn" aria-label="New chat">
                                     ${this.getRefreshIcon()}
                                 </button>` : ''}
@@ -328,6 +341,7 @@
                 input: document.getElementById('chatbot-input'),
                 form: document.getElementById('chatbot-form'),
                 tooltip: document.getElementById('chatbot-tooltip'),
+                infoTooltip: document.getElementById('chatbot-info-tooltip'),
                 backBtn: document.getElementById('chatbot-back-btn'),
                 infoBtn: document.getElementById('chatbot-info-btn'),
                 refreshBtn: document.getElementById('chatbot-refresh-btn'),
@@ -343,8 +357,14 @@
             
             // Window controls
             this.elements.minimizeBtn?.addEventListener('click', () => this.closeChat());
-            this.elements.infoBtn?.addEventListener('click', () => this.showInfo());
             this.elements.refreshBtn?.addEventListener('click', () => this.startNewChat());
+            
+            // Info button and tooltip hover handlers
+            const infoWrapper = document.querySelector('.chatbot-info-wrapper');
+            if (infoWrapper) {
+                infoWrapper.addEventListener('mouseenter', () => this.showInfoTooltip());
+                infoWrapper.addEventListener('mouseleave', () => this.hideInfoTooltip());
+            }
             
             // Back button (to switch to list view)
             this.elements.backBtn?.addEventListener('click', () => this.switchToListView());
@@ -467,8 +487,18 @@
             this.sessionManager.saveWidgetState(false);
         }
         
-        showInfo() {
-            alert('Concentrix Bot v1.0\n\nPowered by AI to help you connect with Concentrix resources.');
+        showInfoTooltip() {
+            this.state.showInfoTooltip = true;
+            if (this.elements.infoTooltip) {
+                this.elements.infoTooltip.classList.add('show');
+            }
+        }
+        
+        hideInfoTooltip() {
+            this.state.showInfoTooltip = false;
+            if (this.elements.infoTooltip) {
+                this.elements.infoTooltip.classList.remove('show');
+            }
         }
         
         startNewChat() {
@@ -1100,9 +1130,21 @@
                     }
                     // Add control buttons for chat view
                     controls.innerHTML = `
-                        <button id="chatbot-info-btn" class="chatbot-control-btn" aria-label="Info">
-                            ${this.getInfoIcon()}
-                        </button>
+                        <div class="chatbot-info-wrapper">
+                            <button id="chatbot-info-btn" class="chatbot-control-btn" aria-label="Info">
+                                ${this.getInfoIcon()}
+                            </button>
+                            <!-- Info Tooltip -->
+                            <div id="chatbot-info-tooltip" class="chatbot-info-tooltip ${this.state.showInfoTooltip ? 'show' : ''}">
+                                <div class="chatbot-info-tooltip-header">
+                                    <h3>Powered by iX Hello</h3>
+                                </div>
+                                <div class="chatbot-info-tooltip-content">
+                                    <p>This chatbot is powered by iX Hello to provide you with the answers you need to know about Concentrix.</p>
+                                    <a href="https://cnxcdev.wpengine.com/ix-hello/" target="_blank" class="chatbot-info-tooltip-link">Learn more about iX Hello</a>
+                                </div>
+                            </div>
+                        </div>
                         <button id="chatbot-refresh-btn" class="chatbot-control-btn" aria-label="New chat">
                             ${this.getRefreshIcon()}
                         </button>
@@ -1112,11 +1154,20 @@
                     `;
                 }
                 
+                // Update cached elements
+                this.elements.infoTooltip = document.getElementById('chatbot-info-tooltip');
+                
                 // Reattach header button listeners
                 document.getElementById('chatbot-minimize-btn')?.addEventListener('click', () => this.closeChat());
                 document.getElementById('chatbot-back-btn')?.addEventListener('click', () => this.switchToListView());
-                document.getElementById('chatbot-info-btn')?.addEventListener('click', () => this.showInfo());
                 document.getElementById('chatbot-refresh-btn')?.addEventListener('click', () => this.startNewChat());
+                
+                // Info button and tooltip hover handlers
+                const infoWrapper = document.querySelector('.chatbot-info-wrapper');
+                if (infoWrapper) {
+                    infoWrapper.addEventListener('mouseenter', () => this.showInfoTooltip());
+                    infoWrapper.addEventListener('mouseleave', () => this.hideInfoTooltip());
+                }
                 
                 // Complete transition
                 container.style.opacity = '1';
