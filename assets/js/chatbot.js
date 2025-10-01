@@ -54,7 +54,11 @@
             if (this.state.isOpen) {
                 // Small delay to ensure DOM is ready
                 setTimeout(() => {
-                    this.elements.window?.classList.add('open');
+                    this.elements.window?.classList.add('open', 'extended');
+                    // Hide the open chat button since widget is open
+                    if (this.elements.button) {
+                        this.elements.button.style.display = 'none';
+                    }
                     // Ensure messages are visible if this is a new session
                     if (this.state.messages.length > 0 && this.elements.messages && !this.elements.messages.hasChildNodes()) {
                         this.elements.messages.innerHTML = this.buildMessagesHTML();
@@ -426,6 +430,18 @@
             this.state.isOpen = !this.state.isOpen;
             this.elements.window.classList.toggle('open', this.state.isOpen);
             
+            // Hide/show the open chat button and adjust window position
+            if (this.elements.button) {
+                this.elements.button.style.display = this.state.isOpen ? 'none' : 'block';
+            }
+            
+            // Add/remove extended class to fill button space
+            if (this.state.isOpen) {
+                this.elements.window.classList.add('extended');
+            } else {
+                this.elements.window.classList.remove('extended');
+            }
+            
             // Save the widget state
             this.sessionManager.saveWidgetState(this.state.isOpen);
             
@@ -439,7 +455,12 @@
         
         closeChat() {
             this.state.isOpen = false;
-            this.elements.window.classList.remove('open');
+            this.elements.window.classList.remove('open', 'extended');
+            
+            // Show the open chat button again
+            if (this.elements.button) {
+                this.elements.button.style.display = 'block';
+            }
             
             // Save the closed state
             this.sessionManager.saveWidgetState(false);

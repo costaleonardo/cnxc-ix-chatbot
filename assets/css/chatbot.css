@@ -181,6 +181,11 @@
     transform: scale(1) translateY(0);
 }
 
+/* Extended positioning when button is hidden */
+.chatbot-window.open.extended {
+    bottom: 20px;
+}
+
 /* Chat Header */
 .chatbot-header {
     display: flex;
@@ -891,6 +896,11 @@
         right: 16px;
         bottom: 72px;
         border-radius: 12px;
+    }
+    
+    .chatbot-window.open.extended {
+        bottom: 16px;
+        height: calc(100vh - 40px);
     }
     
     .chatbot-tooltip {
