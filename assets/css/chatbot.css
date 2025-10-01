@@ -195,7 +195,8 @@
     border-bottom: 1px solid var(--chatbot-border);
     background: var(--chatbot-bg);
     border-radius: 16px 16px 0 0;
-    gap: 12px;
+    gap: 0;
+    text-align: left;
 }
 
 /* Back Button */
@@ -212,6 +213,7 @@
     cursor: pointer !important;
     transition: all 0.2s !important;
     flex-shrink: 0 !important;
+    padding: 0 !important;
 }
 
 .chatbot-back-btn:hover {
@@ -718,18 +720,19 @@
 
 .chatbot-input-footer a {
     text-decoration: underline;
+    margin-left: .25rem;
 }
 
 .chatbot-form {
+    position: relative;
     display: flex;
-    gap: 12px;
-    align-items: flex-end;
+    align-items: center;
 }
 
 .chatbot-input {
-    flex: 1;
-    padding: 10px 14px;
-    border: 1px solid var(--chatbot-border);
+    width: 100%;
+    padding: 12px 50px 12px 20px;
+    border: 1px solid #e0e0e0;
     border-radius: 4px !important;
     resize: none;
     font-family: inherit;
@@ -738,8 +741,14 @@
     max-height: 120px;
     outline: none;
     transition: all 0.2s ease;
-    background: var(--chatbot-bg-secondary);
+    background: #ffffff;
     will-change: border-color, background-color;
+    color: #333;
+}
+
+.chatbot-input::placeholder {
+    color: #999;
+    opacity: 1;
 }
 
 .chatbot-input:focus {
@@ -749,24 +758,26 @@
 }
 
 .chatbot-send-btn {
-    width: 45px !important;
-    height: 45px !important;
+    position: absolute;
+    right: 6px;
+    width: 36px !important;
+    height: 36px !important;
     border-radius: 50% !important;
-    /* background: var(--chatbot-primary) !important; */
+    background: #e0e0e0 !important;
     border: none !important;
-    color: white !important;
+    color: #666 !important;
     /* display: flex !important; */
     align-items: center !important;
     justify-content: center !important; 
     cursor: pointer !important;
     transition: all 0.15s ease !important;
     will-change: transform, background-color !important;
+    padding: 0 !important;
 }
 
 .chatbot-send-btn:hover:not(:disabled) {
-    /* background: var(--chatbot-primary-hover) !important; */
-    transform: translateY(-1px) !important;
-    box-shadow: var(--chatbot-shadow-light) !important;
+    background: #d0d0d0 !important;
+    transform: scale(1.05) !important;
 }
 
 .chatbot-send-btn:disabled {
