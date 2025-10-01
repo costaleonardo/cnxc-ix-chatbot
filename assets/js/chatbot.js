@@ -1036,6 +1036,7 @@
                                         ${this.getSendIcon()}
                                     </button>
                                 </form>
+                                <div class="chatbot-input-footer"><span>Powered by </span> <span><a href="/ix-hello/">iX Hello</a></span></div>
                             </div>
                         `;
                         container.insertAdjacentHTML('beforeend', inputHTML);
@@ -1322,8 +1323,9 @@
         }
         
         getSendIcon() {
-            return `<svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                <path d="M2.01 21L23 12 2.01 3 2 10L17 12 2 14L2.01 21Z" fill="currentColor"/>
+            return `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M22 2L11 13" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M22 2L15 22L11 13L2 9L22 2Z" stroke-linecap="round" stroke-linejoin="round"/>
             </svg>`;
         }
         
