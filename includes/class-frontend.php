@@ -46,7 +46,10 @@ class Hello_Chatbot_Frontend {
             'position' => get_option('chatbot_position', 'bottom-right'),
             'welcomeMessage' => get_option('chatbot_welcome_message'),
             'chatIconUrl' => HELLO_CHATBOT_PLUGIN_URL . 'assets/img/chat-icon.svg',
-            'concentrixLogoUrl' => HELLO_CHATBOT_PLUGIN_URL . 'assets/img/concentrix-logo-full-color.webp',
+            'concentrixLogoUrl' => HELLO_CHATBOT_PLUGIN_URL . 'assets/img/iX_Product Logo_Hello_Dark.svg',
+            'infoTooltipUrl' => HELLO_CHATBOT_PLUGIN_URL . 'assets/img/info-tooltip.svg',
+            'resetChatUrl' => HELLO_CHATBOT_PLUGIN_URL . 'assets/img/reset-chat.svg',
+            'closeWindowUrl' => HELLO_CHATBOT_PLUGIN_URL . 'assets/img/close-window.svg',
             'enableStreaming' => true, // Enable streaming responses by default
             'strings' => array(
                 'thinking' => __('Thinking...', 'hello-chatbot'),

@@ -121,7 +121,7 @@
                 <!-- Tooltip -->
                 <div id="chatbot-tooltip" class="chatbot-tooltip ${this.state.showTooltip ? 'show' : ''}">
                     <div class="chatbot-tooltip-header">
-                        <span class="chatbot-tooltip-logo"> <img src="${window.helloChatbot.concentrixLogoUrl}" width="104px" /> <span class="class="chatbot-tooltip-logo-text">Assistant</span> </span>
+                        <span class="chatbot-tooltip-logo"> <img src="${window.helloChatbot.concentrixLogoUrl}" width="104px" /></span>
                         <button class="chatbot-tooltip-close" aria-label="Close">×</button>
                     </div>
                     <div class="chatbot-tooltip-content">
@@ -138,7 +138,7 @@
                                 ${this.getBackIcon()}
                             </button>` : ''}
                         <div class="chatbot-title">
-                            <h3>${this.state.viewMode === 'list' ? 'Chat History' : 'concentrix Bot'}</h3>
+                            <span class="chatbot-tooltip-logo"> <img src="${window.helloChatbot.concentrixLogoUrl}" width="104px" /> </span>
                             ${this.state.viewMode === 'chat' && this.state.currentSession?.title !== 'New Chat' ? 
                                 `<div class="chatbot-session-title">${this.state.currentSession.title}</div>` : ''}
                         </div>
@@ -175,6 +175,7 @@
                                     ${this.getSendIcon()}
                                 </button>
                             </form>
+                            <div class="chatbot-input-footer"><span>Powered by </span> <span><a href="/ix-hello/">iX Hello</a></span></div>
                         </div>
                     ` : `
                         <!-- Chat List View -->
@@ -203,7 +204,7 @@
         buildMessageHTML(message) {
             const isUser = message.role === 'user';
             const avatar = isUser ? this.getUserIcon() : this.getBotIcon();
-            const sender = isUser ? 'You' : '[Assistant name]';
+            const sender = isUser ? 'You' : 'iX Hello Assistant';
             
             let html = `
                 <div class="chatbot-message chatbot-message-${message.role}" data-message-id="${message.id}">
@@ -275,7 +276,7 @@
                     <div class="chatbot-message-avatar">${this.getBotIcon()}</div>
                     <div class="chatbot-message-content">
                         <div class="chatbot-message-header">
-                            <span class="chatbot-message-sender">[Assistant name]</span>
+                            <span class="chatbot-message-sender">iX Hello Assistant</span>
                             <span class="chatbot-message-time">${this.getCurrentTime()}</span>
                         </div>
                         <div class="chatbot-thinking-dots">
@@ -1309,22 +1310,15 @@
         }
         
         getInfoIcon() {
-            return `<svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/>
-                <path d="M12 16V12M12 8H12.01" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-            </svg>`;
+            return `<img src="${window.helloChatbot.infoTooltipUrl}" width="16" height="16" alt="Info" />`;
         }
         
         getRefreshIcon() {
-            return `<svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                <path d="M12 4V1L8 5L12 9V6C15.31 6 18 8.69 18 12C18 13.01 17.75 13.97 17.3 14.8L18.76 16.26C19.54 15.03 20 13.57 20 12C20 7.58 16.42 4 12 4ZM12 18C8.69 18 6 15.31 6 12C6 10.99 6.25 10.03 6.7 9.2L5.24 7.74C4.46 8.97 4 10.43 4 12C4 16.42 7.58 20 12 20V23L16 19L12 15V18Z" fill="currentColor"/>
-            </svg>`;
+            return `<img src="${window.helloChatbot.resetChatUrl}" width="16" height="16" alt="New chat" />`;
         }
         
         getMinimizeIcon() {
-            return `<svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                <path d="M5 12H19" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-            </svg>`;
+            return `<img src="${window.helloChatbot.closeWindowUrl}" width="16" height="16" alt="Minimize" />`;
         }
         
         getSendIcon() {
