@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Info Tooltip Test</title>
+    <link rel="stylesheet" href="assets/css/chatbot.css">
+    <style>
+        body {
+            margin: 20px;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: #f5f5f5;
+        }
+        .test-container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 30px;
+        }
+        .demo-controls {
+            display: flex;
+            gap: 20px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            align-items: center;
+            justify-content: flex-end;
+        }
+        .status {
+            margin-top: 20px;
+            padding: 10px;
+            background: #e8f4fd;
+            border-radius: 4px;
+            color: #0066cc;
+        }
+        :root {
+            --chatbot-primary: #0066cc;
+            --chatbot-primary-light: #e8f4fd;
+            --chatbot-text: #333;
+            --chatbot-text-secondary: #666;
+            --chatbot-border: #e0e0e0;
+            --chatbot-bg: #fff;
+            --chatbot-bg-secondary: #f8f9fa;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1>Info Tooltip Test</h1>
+        
+        <p>Click the info button to test the tooltip functionality:</p>
+        
+        <div class="demo-controls">
+            <div class="chatbot-controls">
+                <div class="chatbot-info-wrapper">
+                    <button id="chatbot-info-btn" class="chatbot-control-btn" aria-label="Info">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                            <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/>
+                            <path d="M12 16V12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                            <circle cx="12" cy="9" r="1" fill="currentColor"/>
+                        </svg>
+                    </button>
+                    <!-- Info Tooltip -->
+                    <div id="chatbot-info-tooltip" class="chatbot-info-tooltip">
+                        <div class="chatbot-info-tooltip-header">
+                            <h3>Powered by iX Hello</h3>
+                        </div>
+                        <div class="chatbot-info-tooltip-content">
+                            <p>This chatbot is powered by iX Hello to provide you with the answers you need to know about Concentrix.</p>
+                            <a href="https://cnxcdev.wpengine.com/ix-hello/" target="_blank" class="chatbot-info-tooltip-link">Learn more about iX Hello</a>
+                        </div>
+                    </div>
+                </div>
+                <button class="chatbot-control-btn" aria-label="Refresh">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                        <path d="M4 12a8 8 0 1 1 1.7 4.9" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                        <path d="M4 4v8h8" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                </button>
+                <button class="chatbot-control-btn" aria-label="Minimize">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                        <path d="M19 13H5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                    </svg>
+                </button>
+            </div>
+        </div>
+        
+        <div class="status" id="status">Ready - Hover over the info button to show the tooltip</div>
+        
+        <h2 style="margin-top: 40px;">Test Cases:</h2>
+        <ul>
+            <li>✅ Tooltip appears when hovering over info button</li>
+            <li>✅ Tooltip stays visible when cursor moves to tooltip content</li>
+            <li>✅ Tooltip disappears when moving mouse away from entire area</li>
+            <li>✅ Link in tooltip is clickable without tooltip disappearing</li>
+            <li>✅ Tooltip shows "Powered by iX Hello" as header</li>
+            <li>✅ Tooltip contains explanatory text</li>
+            <li>✅ Tooltip has "Learn more about iX Hello" link</li>
+            <li>✅ Tooltip is positioned below the info button</li>
+            <li>✅ Smooth fade in/out transition</li>
+            <li>✅ No click behavior on info button</li>
+        </ul>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const infoBtn = document.getElementById('chatbot-info-btn');
+            const infoTooltip = document.getElementById('chatbot-info-tooltip');
+            const status = document.getElementById('status');
+            let isTooltipOpen = false;
+            
+            // Show tooltip on hover (using wrapper to include tooltip content)
+            const infoWrapper = document.querySelector('.chatbot-info-wrapper');
+            infoWrapper.addEventListener('mouseenter', function() {
+                isTooltipOpen = true;
+                infoTooltip.classList.add('show');
+                updateStatus();
+            });
+            
+            // Hide tooltip when mouse leaves wrapper area
+            infoWrapper.addEventListener('mouseleave', function() {
+                isTooltipOpen = false;
+                infoTooltip.classList.remove('show');
+                updateStatus();
+            });
+            
+            function updateStatus() {
+                status.textContent = isTooltipOpen ? 
+                    '🎯 Tooltip is visible - You can now move cursor over the tooltip content!' : 
+                    '📍 Hover over the info button to show tooltip';
+            }
+        });
+    </script>
+</body>
+</html>
