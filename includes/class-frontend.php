@@ -46,6 +46,7 @@ class Hello_Chatbot_Frontend {
             'position' => get_option('chatbot_position', 'bottom-right'),
             'welcomeMessage' => get_option('chatbot_welcome_message'),
             'chatIconUrl' => HELLO_CHATBOT_PLUGIN_URL . 'assets/img/chat-icon.svg',
+            'concentrixLogoUrl' => HELLO_CHATBOT_PLUGIN_URL . 'assets/img/concentrix-logo-full-color.webp',
             'enableStreaming' => true, // Enable streaming responses by default
             'strings' => array(
                 'thinking' => __('Thinking...', 'hello-chatbot'),

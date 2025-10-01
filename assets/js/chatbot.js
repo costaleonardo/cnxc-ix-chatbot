@@ -117,11 +117,11 @@
                 <!-- Tooltip -->
                 <div id="chatbot-tooltip" class="chatbot-tooltip ${this.state.showTooltip ? 'show' : ''}">
                     <div class="chatbot-tooltip-header">
-                        <h4>concentrix Bot</h4>
+                        <span class="chatbot-tooltip-logo"> <img src="${window.helloChatbot.concentrixLogoUrl}" width="104px" /> <span class="class="chatbot-tooltip-logo-text">Assistant</span> </span>
                         <button class="chatbot-tooltip-close" aria-label="Close">×</button>
                     </div>
                     <div class="chatbot-tooltip-content">
-                        <p>👋 Hi there! Want to chat about Concentrix services?</p>
+                        <p>👋 Hi there! Want to chat about Concentrix services? I’m an AI assistant that is here to help.</p>
                     </div>
                 </div>
                 
