@@ -47,6 +47,7 @@ class Hello_Chatbot {
     }
     
     private function load_dependencies() {
+        require_once HELLO_CHATBOT_PLUGIN_PATH . 'includes/class-token-manager.php';
         require_once HELLO_CHATBOT_PLUGIN_PATH . 'includes/class-admin.php';
         require_once HELLO_CHATBOT_PLUGIN_PATH . 'includes/class-frontend.php';
     }
@@ -71,7 +72,15 @@ class Hello_Chatbot {
             'chatbot_api_endpoint' => 'https://kbot-preprod.concentrix.com/api/v1/kb/ask?appId=aab4e255-2a10-4723-95fd-d2e77a24a545',
             'chatbot_api_token' => '',
             'chatbot_welcome_message' => 'Welcome to Concentrix Bot. How can I help you today?',
-            'chatbot_position' => 'bottom-right'
+            'chatbot_position' => 'bottom-right',
+            // OAuth2 configuration
+            'chatbot_oauth_client_id' => '9439f615-fe1b-4af1-9c5c-bf7bd7a82774',
+            'chatbot_oauth_client_secret' => '',
+            'chatbot_oauth_tenant_id' => '599e51d6-2f8c-4347-8e59-1f795a51a98c',
+            'chatbot_oauth_scope' => '9439f615-fe1b-4af1-9c5c-bf7bd7a82774/.default',
+            'chatbot_oauth_endpoint' => 'https://login.microsoftonline.com/599e51d6-2f8c-4347-8e59-1f795a51a98c/oauth2/v2.0/token',
+            'chatbot_token_expires_at' => 0,
+            'chatbot_use_oauth' => true // Flag to enable OAuth2 token refresh
         );
         
         foreach ($defaults as $key => $value) {
