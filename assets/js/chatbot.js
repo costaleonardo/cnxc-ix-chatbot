@@ -473,10 +473,20 @@
         
         startNewChat() {
             if (confirm('Start a new conversation?')) {
+                // Clear the DOM cache for current session
+                if (this.state.currentSession) {
+                    this.clearMessageCache(this.state.currentSession.id);
+                }
+                
                 const session = this.sessionManager.createSession();
                 this.state.currentSession = session;
                 this.state.sessions = this.sessionManager.getAllSessions();
                 this.state.messages = [];
+                
+                // Force clear the messages container
+                if (this.elements.messages) {
+                    this.elements.messages.innerHTML = '';
+                }
                 
                 this.showWelcomeMessage();
                 
