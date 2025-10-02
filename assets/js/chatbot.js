@@ -31,6 +31,13 @@
             this.elements = {};
             this.messageDOMCache = new Map(); // Cache message DOM elements per session
             
+            // Transition state management
+            this.transitionState = {
+                isTransitioning: false,
+                pendingTimeouts: [],
+                currentTransition: null
+            };
+            
             this.init();
         }
         
@@ -156,7 +163,7 @@
                                         </div>
                                         <div class="chatbot-info-tooltip-content">
                                             <p>This chatbot is powered by iX Hello to provide you with the answers you need to know about Concentrix.</p>
-                                            <a href="https://cnxcdev.wpengine.com/ix-hello/" target="_blank" class="chatbot-info-tooltip-link">Learn more about iX Hello</a>
+                                            <a href="/ix-hello" target="_blank" class="chatbot-info-tooltip-link">Learn more about iX Hello</a>
                                         </div>
                                     </div>
                                 </div>
@@ -475,6 +482,14 @@
         }
         
         closeChat() {
+            // Cancel any ongoing transitions first
+            this.cancelPendingTransitions();
+            
+            // Clean up session card states if in list view
+            if (this.state.viewMode === 'list') {
+                this.cleanupSessionCardStates();
+            }
+            
             this.state.isOpen = false;
             this.elements.window.classList.remove('open', 'extended');
             
@@ -993,6 +1008,47 @@
         }
         
         /**
+         * Cancel any ongoing transitions and clean up timeouts
+         */
+        cancelPendingTransitions() {
+            // Clear all pending timeouts
+            this.transitionState.pendingTimeouts.forEach(timeoutId => {
+                clearTimeout(timeoutId);
+            });
+            this.transitionState.pendingTimeouts = [];
+            
+            // Remove transitioning class if present
+            const container = this.elements.window;
+            if (container) {
+                container.classList.remove('transitioning');
+                container.style.opacity = '';
+            }
+            
+            // Reset transition state
+            this.transitionState.isTransitioning = false;
+            this.transitionState.currentTransition = null;
+        }
+        
+        /**
+         * Check if widget is currently transitioning
+         */
+        isTransitioning() {
+            return this.transitionState.isTransitioning;
+        }
+        
+        /**
+         * Clean up session card states to prevent visual lag
+         */
+        cleanupSessionCardStates() {
+            const sessionCards = document.querySelectorAll('.chatbot-session-card');
+            sessionCards.forEach(card => {
+                // Force remove hover states and transitions
+                card.style.transform = '';
+                card.style.boxShadow = '';
+            });
+        }
+
+        /**
          * Smooth transition between views without jarring rebuilds
          */
         transitionToView(newViewMode, sessionId = null) {
@@ -1001,12 +1057,19 @@
             const container = this.elements.window;
             if (!container) return;
             
+            // Cancel any existing transitions
+            this.cancelPendingTransitions();
+            
+            // Mark as transitioning
+            this.transitionState.isTransitioning = true;
+            this.transitionState.currentTransition = newViewMode;
+            
             // Add transitioning class for smooth fade
             container.classList.add('transitioning');
             container.style.opacity = '0.95';
             
-            // Shorter delay for quicker transitions
-            setTimeout(() => {
+            // Track the timeout
+            const transitionTimeout = setTimeout(() => {
                 if (newViewMode === 'chat' && sessionId && sessionId !== this.state.currentSession?.id) {
                     this.switchSession(sessionId);
                 }
@@ -1141,7 +1204,7 @@
                                 </div>
                                 <div class="chatbot-info-tooltip-content">
                                     <p>This chatbot is powered by iX Hello to provide you with the answers you need to know about Concentrix.</p>
-                                    <a href="https://cnxcdev.wpengine.com/ix-hello/" target="_blank" class="chatbot-info-tooltip-link">Learn more about iX Hello</a>
+                                    <a href="/ix-hello" target="_blank" class="chatbot-info-tooltip-link">Learn more about iX Hello</a>
                                 </div>
                             </div>
                         </div>
@@ -1171,10 +1234,32 @@
                 
                 // Complete transition
                 container.style.opacity = '1';
-                setTimeout(() => {
+                const cleanupTimeout = setTimeout(() => {
                     container.classList.remove('transitioning');
+                    
+                    // Clear transition state
+                    this.transitionState.isTransitioning = false;
+                    this.transitionState.currentTransition = null;
+                    
+                    // Remove this timeout from tracking
+                    const index = this.transitionState.pendingTimeouts.indexOf(cleanupTimeout);
+                    if (index > -1) {
+                        this.transitionState.pendingTimeouts.splice(index, 1);
+                    }
                 }, 50);
+                
+                // Track the cleanup timeout
+                this.transitionState.pendingTimeouts.push(cleanupTimeout);
+                
+                // Remove the main timeout from tracking as it's completed
+                const index = this.transitionState.pendingTimeouts.indexOf(transitionTimeout);
+                if (index > -1) {
+                    this.transitionState.pendingTimeouts.splice(index, 1);
+                }
             }, 30);
+            
+            // Track the main timeout
+            this.transitionState.pendingTimeouts.push(transitionTimeout);
         }
         
         /**
