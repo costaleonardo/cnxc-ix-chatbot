@@ -647,32 +647,29 @@
 
 /* References */
 .chatbot-references {
-    margin-top: 12px;
-    border: 1px solid var(--chatbot-border);
-    border-radius: 12px;
-    overflow: hidden;
-    background: var(--chatbot-bg);
+    margin-top: 24px;
 }
 
 .chatbot-references-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 10px 14px;
-    background: var(--chatbot-bg-hover);
+    padding: 8px 0;
     cursor: pointer;
-    font-size: 13px;
-    color: var(--chatbot-text-secondary);
-    font-weight: 500;
-    transition: background 0.2s;
+    font-size: 14px;
+    color: var(--chatbot-text);
+    font-weight: 600;
+    transition: opacity 0.2s;
 }
 
 .chatbot-references-header:hover {
-    background: var(--chatbot-bg-secondary);
+    opacity: 0.8;
 }
 
 .chatbot-references-toggle {
     transition: transform 0.2s;
+    color: var(--chatbot-text-secondary);
+    font-size: 18px;
 }
 
 .chatbot-references.expanded .chatbot-references-toggle {
@@ -681,7 +678,7 @@
 
 .chatbot-references-list {
     display: none;
-    padding: 8px 12px;
+    padding: 12px 0 4px 0;
 }
 
 .chatbot-references.expanded .chatbot-references-list {
@@ -689,29 +686,43 @@
 }
 
 .chatbot-reference-item {
-    padding: 8px 0;
-    border-bottom: 1px solid var(--chatbot-border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 0;
+    border-bottom: 1px solid #E5E7EB;
 }
 
 .chatbot-reference-item:last-child {
     border-bottom: none;
 }
 
-.chatbot-reference-item a {
-    color: var(--chatbot-primary);
+.chatbot-reference-title {
+    color: var(--chatbot-text);
+    font-size: 14px;
+    font-weight: 400;
     text-decoration: none;
-    font-weight: 500;
-    display: block;
-    margin-bottom: 4px;
+    flex: 1;
 }
 
-.chatbot-reference-item a:hover {
-    text-decoration: underline;
+.chatbot-reference-button {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: opacity 0.2s;
 }
 
-.chatbot-reference-description {
-    font-size: 12px;
-    color: var(--chatbot-text-secondary);
+.chatbot-reference-button:hover {
+    opacity: 0.7;
+}
+
+.chatbot-reference-button svg {
+    width: 24px;
+    height: 24px;
 }
 
 /* Action Buttons */
