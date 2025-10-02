@@ -175,6 +175,18 @@
     transition: opacity 0.1s ease;
 }
 
+/* Ensure smooth closing even during view transitions */
+.chatbot-window:not(.open) {
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+/* Override session card transitions when parent is closing */
+.chatbot-window:not(.open) .chatbot-session-card {
+    transition: none !important;
+    transform: none !important;
+    box-shadow: none !important;
+}
+
 .chatbot-window.open {
     opacity: 1;
     visibility: visible;
