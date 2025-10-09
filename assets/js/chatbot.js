@@ -27,7 +27,8 @@
                 showTooltip: false, // Will be set in init() based on page load count and other conditions
                 showInfoTooltip: false, // For info button tooltip
                 showRefreshTooltip: false, // For refresh button tooltip
-                showMinimizeTooltip: false // For minimize button tooltip
+                showMinimizeTooltip: false, // For minimize button tooltip
+                showBackTooltip: false // For back button tooltip
             };
             
             this.elements = {};
@@ -143,10 +144,16 @@
                 <div id="chatbot-window" class="chatbot-window ${this.state.isOpen ? 'open' : ''}">
                     <!-- Header -->
                     <div class="chatbot-header">
-                        ${this.state.viewMode === 'chat' && this.state.sessions.length > 0 ? 
-                            `<button id="chatbot-back-btn" class="chatbot-back-btn" aria-label="View all chats">
-                                ${this.getBackIcon()}
-                            </button>` : ''}
+                        ${this.state.viewMode === 'chat' && this.state.sessions.length > 0 ?
+                            `<div class="chatbot-back-wrapper">
+                                <button id="chatbot-back-btn" class="chatbot-back-btn" aria-label="View all chats">
+                                    ${this.getBackIcon()}
+                                </button>
+                                <!-- Back Tooltip -->
+                                <div id="chatbot-back-tooltip" class="chatbot-back-tooltip ${this.state.showBackTooltip ? 'show' : ''}">
+                                    <p>Chat History</p>
+                                </div>
+                            </div>` : ''}
                         <div class="chatbot-title">
                             <span class="chatbot-tooltip-logo"> <img src="${window.helloChatbot.concentrixLogoUrl}" width="104px" /> </span>
                             ${this.state.viewMode === 'chat' && this.state.currentSession?.title !== 'New Chat' ? 
@@ -392,6 +399,7 @@
                 infoTooltip: document.getElementById('chatbot-info-tooltip'),
                 refreshTooltip: document.getElementById('chatbot-refresh-tooltip'),
                 minimizeTooltip: document.getElementById('chatbot-minimize-tooltip'),
+                backTooltip: document.getElementById('chatbot-back-tooltip'),
                 backBtn: document.getElementById('chatbot-back-btn'),
                 infoBtn: document.getElementById('chatbot-info-btn'),
                 refreshBtn: document.getElementById('chatbot-refresh-btn'),
@@ -429,7 +437,14 @@
                 minimizeWrapper.addEventListener('mouseenter', () => this.showMinimizeTooltip());
                 minimizeWrapper.addEventListener('mouseleave', () => this.hideMinimizeTooltip());
             }
-            
+
+            // Back button and tooltip hover handlers
+            const backWrapper = document.querySelector('.chatbot-back-wrapper');
+            if (backWrapper) {
+                backWrapper.addEventListener('mouseenter', () => this.showBackTooltip());
+                backWrapper.addEventListener('mouseleave', () => this.hideBackTooltip());
+            }
+
             // Back button (to switch to list view)
             this.elements.backBtn?.addEventListener('click', () => this.switchToListView());
             
@@ -604,6 +619,20 @@
             this.state.showMinimizeTooltip = false;
             if (this.elements.minimizeTooltip) {
                 this.elements.minimizeTooltip.classList.remove('show');
+            }
+        }
+
+        showBackTooltip() {
+            this.state.showBackTooltip = true;
+            if (this.elements.backTooltip) {
+                this.elements.backTooltip.classList.add('show');
+            }
+        }
+
+        hideBackTooltip() {
+            this.state.showBackTooltip = false;
+            if (this.elements.backTooltip) {
+                this.elements.backTooltip.classList.remove('show');
             }
         }
 
@@ -1193,9 +1222,15 @@
                     // Add back button if not present and there are sessions
                     if (!backBtn && this.state.sessions.length > 0) {
                         const backBtnHTML = `
-                            <button id="chatbot-back-btn" class="chatbot-back-btn" aria-label="View all chats">
-                                ${this.getBackIcon()}
-                            </button>
+                            <div class="chatbot-back-wrapper">
+                                <button id="chatbot-back-btn" class="chatbot-back-btn" aria-label="View all chats">
+                                    ${this.getBackIcon()}
+                                </button>
+                                <!-- Back Tooltip -->
+                                <div id="chatbot-back-tooltip" class="chatbot-back-tooltip ${this.state.showBackTooltip ? 'show' : ''}">
+                                    <p>Chat History</p>
+                                </div>
+                            </div>
                         `;
                         container.querySelector('.chatbot-header').insertAdjacentHTML('afterbegin', backBtnHTML);
                     }
@@ -1241,6 +1276,7 @@
                 this.elements.infoTooltip = document.getElementById('chatbot-info-tooltip');
                 this.elements.refreshTooltip = document.getElementById('chatbot-refresh-tooltip');
                 this.elements.minimizeTooltip = document.getElementById('chatbot-minimize-tooltip');
+                this.elements.backTooltip = document.getElementById('chatbot-back-tooltip');
 
                 // Reattach header button listeners
                 document.getElementById('chatbot-minimize-btn')?.addEventListener('click', () => this.closeChat());
@@ -1267,7 +1303,14 @@
                     minimizeWrapper.addEventListener('mouseenter', () => this.showMinimizeTooltip());
                     minimizeWrapper.addEventListener('mouseleave', () => this.hideMinimizeTooltip());
                 }
-                
+
+                // Back button and tooltip hover handlers
+                const backWrapper = document.querySelector('.chatbot-back-wrapper');
+                if (backWrapper) {
+                    backWrapper.addEventListener('mouseenter', () => this.showBackTooltip());
+                    backWrapper.addEventListener('mouseleave', () => this.hideBackTooltip());
+                }
+
                 // Complete transition
                 container.style.opacity = '1';
                 const cleanupTimeout = setTimeout(() => {
