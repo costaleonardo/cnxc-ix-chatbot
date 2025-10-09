@@ -505,7 +505,10 @@ class Hello_Chatbot_Admin {
         
         // KBot API returns sources in 'sources' array, not 'referenceChunks'
         if (!empty($data['sources'])) {
-            foreach ($data['sources'] as $source) {
+            // Filter to top 3 web-only sources
+            $filtered_sources = $this->filter_references($data['sources']);
+
+            foreach ($filtered_sources as $source) {
                 $references[] = array(
                     'title' => $source['dataSource'] ?? 'Reference',
                     'url' => $source['path'] ?? '#',
@@ -712,20 +715,25 @@ class Hello_Chatbot_Admin {
         
         // Send references if we have them
         if (!empty($sources_data)) {
+            // Filter to top 3 web-only sources
+            $filtered_sources = $this->filter_references($sources_data);
+
             $references = array();
-            foreach ($sources_data as $source) {
+            foreach ($filtered_sources as $source) {
                 $references[] = array(
                     'title' => $source['dataSource'] ?? 'Reference',
                     'url' => $source['path'] ?? '#',
                     'description' => substr($source['content'] ?? '', 0, 150) . '...'
                 );
             }
-            
-            echo "data: " . json_encode(array(
-                'type' => 'references',
-                'references' => $references
-            )) . "\n\n";
-            flush();
+
+            if (!empty($references)) {
+                echo "data: " . json_encode(array(
+                    'type' => 'references',
+                    'references' => $references
+                )) . "\n\n";
+                flush();
+            }
         }
         
         // Send completion signal
@@ -791,7 +799,47 @@ class Hello_Chatbot_Admin {
             )
         );
     }
-    
+
+    /**
+     * Filter references to exclude document types and limit to top 3
+     *
+     * @param array $sources Array of source objects from API
+     * @return array Filtered array with max 3 web-only sources
+     */
+    private function filter_references($sources) {
+        if (empty($sources)) {
+            return array();
+        }
+
+        // Document extensions to exclude
+        $excluded_extensions = array('.pdf', '.docx', '.doc', '.pptx', '.ppt', '.xlsx', '.xls');
+
+        $filtered = array();
+        foreach ($sources as $source) {
+            $path = isset($source['path']) ? strtolower($source['path']) : '';
+
+            // Skip if path contains excluded extension
+            $is_excluded = false;
+            foreach ($excluded_extensions as $ext) {
+                if (strpos($path, $ext) !== false) {
+                    $is_excluded = true;
+                    break;
+                }
+            }
+
+            if (!$is_excluded) {
+                $filtered[] = $source;
+            }
+
+            // Stop after collecting 3 valid sources
+            if (count($filtered) >= 3) {
+                break;
+            }
+        }
+
+        return $filtered;
+    }
+
     /**
      * Debug settings endpoint
      */
