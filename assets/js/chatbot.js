@@ -209,7 +209,7 @@
                                     ${this.getSendIcon()}
                                 </button>
                             </form>
-                            <div class="chatbot-input-footer"><span>Powered by </span> <span><a href="/ix-hello/">iX Hello</a></span></div>
+                            <div class="chatbot-input-footer"><span>Powered by</span> <span><a href="/ix-hello/">iX Hello</a></span></div>
                         </div>
                     ` : `
                         <!-- Chat List View -->
@@ -1141,7 +1141,7 @@
                                         ${this.getSendIcon()}
                                     </button>
                                 </form>
-                                <div class="chatbot-input-footer"><span>Powered by </span> <span><a href="/ix-hello/">iX Hello</a></span></div>
+                                <div class="chatbot-input-footer"><span>Powered by</span> <span><a href="/ix-hello/">iX Hello</a></span></div>
                             </div>
                         `;
                         container.insertAdjacentHTML('beforeend', inputHTML);
