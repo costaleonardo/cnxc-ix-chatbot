@@ -463,10 +463,10 @@ class Hello_Chatbot_Admin {
                         'mask' => false
                     )
                 ),
-                'stream' => true
+                'stream' => false  // Client-side fake streaming - request complete response
             )
         );
-        
+
         // Debug logging
         error_log('Hello Chatbot: API Request URL: ' . $api_endpoint);
         error_log('Hello Chatbot: API Request Body: ' . json_encode($request_body));

@@ -712,193 +712,93 @@
         }
         
         /**
-         * Send message using Server-Sent Events for streaming responses
+         * Send message using client-side fake streaming for WP Engine compatibility
+         * Fetches complete response and animates it appearing word-by-word
          */
         async sendStreamingMessage(text) {
-            return new Promise((resolve) => {
-                try {
-                    // Build SSE URL with parameters
-                    const params = new URLSearchParams({
-                        action: 'hello_chatbot_stream_message',
-                        nonce: this.config.nonce,
-                        message: text,
-                        page_context: `On page: ${document.title} (${location.pathname})`
-                    });
-                    
-                    const eventSource = new EventSource(`${this.config.ajaxUrl}?${params}`);
-                    
-                    // Create assistant message that will be updated with chunks
-                    const assistantMsgId = 'msg-' + Date.now();
-                    const assistantMsg = {
-                        id: assistantMsgId,
-                        role: 'assistant',
-                        content: '',
-                        timestamp: this.getCurrentTime(),
-                        references: []
-                    };
-                    
-                    let accumulatedContent = '';
-                    let messageElement = null;
-                    let contentElement = null;
-                    let firstChunkReceived = false;
-                    
-                    eventSource.onmessage = (event) => {
-                        try {
-                            // Handle empty or malformed data gracefully
-                            if (!event.data || event.data.trim() === '') {
-                                return;
-                            }
-                            
-                            const data = JSON.parse(event.data);
-                            
-                            if (data.error) {
-                                // Error occurred
-                                console.error('Streaming error:', data.error);
-                                eventSource.close();
-                                
-                                // Remove thinking indicator if still showing
-                                if (!firstChunkReceived) {
-                                    this.setLoadingIndicator(false);
-                                    
-                                    // Add error message to state
-                                    assistantMsg.content = this.config.strings.error;
-                                    this.addMessage(assistantMsg);
-                                    
-                                    // Create and append error message element
-                                    messageElement = this.appendMessage(assistantMsg);
-                                } else {
-                                    // Update existing message with error
-                                    assistantMsg.content = this.config.strings.error;
-                                    this.updateMessage(assistantMsgId, assistantMsg);
-                                    if (contentElement) {
-                                        const textElement = contentElement.querySelector('.chatbot-message-text');
-                                        if (textElement) {
-                                            textElement.innerHTML = this.formatMessage(assistantMsg.content);
-                                        }
-                                    }
-                                }
-                                
-                                resolve(false); // Streaming failed
-                                return;
-                            }
-                            
-                            switch (data.type) {
-                                case 'chunk':
-                                    // On first chunk, remove thinking indicator and create message
-                                    if (!firstChunkReceived) {
-                                        firstChunkReceived = true;
-                                        this.setLoadingIndicator(false);
-                                        
-                                        // Add message to state
-                                        this.addMessage(assistantMsg);
-                                        
-                                        // Create and append message element
-                                        messageElement = this.appendMessage(assistantMsg);
-                                        contentElement = messageElement?.querySelector('.chatbot-message-content');
-                                    }
-                                    
-                                    // Append new content chunk
-                                    accumulatedContent += data.content;
-                                    assistantMsg.content = accumulatedContent;
-                                    
-                                    // Update message in state
-                                    this.updateMessage(assistantMsgId, assistantMsg);
-                                    
-                                    // Update DOM directly for smooth streaming (like test file)
-                                    if (contentElement) {
-                                        const textElement = contentElement.querySelector('.chatbot-message-text');
-                                        if (textElement) {
-                                            textElement.innerHTML = this.formatMessage(accumulatedContent);
-                                            // Auto-scroll within message if needed
-                                            textElement.scrollTop = textElement.scrollHeight;
-                                        }
-                                    }
-                                    
-                                    // Scroll to bottom to show new content
-                                    this.scrollToBottom();
-                                    break;
-                                    
-                                case 'references':
-                                    // Update references
-                                    assistantMsg.references = data.references || [];
-                                    this.updateMessage(assistantMsgId, assistantMsg);
-                                    
-                                    // Add references to DOM (like test file shows references after content)
-                                    if (data.references?.length > 0) {
-                                        const referencesHTML = this.buildReferencesHTML(data.references);
-                                        
-                                        // Check if references container already exists
-                                        let refsContainer = messageElement?.querySelector('.chatbot-references');
-                                        if (!refsContainer) {
-                                            // Create references container if it doesn't exist
-                                            const textElement = contentElement.querySelector('.chatbot-message-text');
-                                            if (textElement) {
-                                                textElement.insertAdjacentHTML('afterend', referencesHTML);
-                                            }
-                                        } else {
-                                            // Update existing references
-                                            refsContainer.outerHTML = referencesHTML;
-                                        }
-                                        
-                                        this.scrollToBottom();
-                                    }
-                                    break;
-                                    
-                                case 'done':
-                                    // Streaming completed successfully
-                                    eventSource.close();
-                                    this.state.isLoading = false;
-                                    
-                                    // If no chunks were received, remove thinking indicator
-                                    if (!firstChunkReceived) {
-                                        this.setLoadingIndicator(false);
-                                    }
-                                    
-                                    resolve(true); // Streaming succeeded
-                                    break;
-                            }
-                        } catch (e) {
-                            console.error('Error parsing SSE data:', e, 'Raw data:', event.data);
-                            // Don't fail the entire stream for one bad chunk
-                            // Continue processing other chunks
-                        }
-                    };
-                    
-                    eventSource.onerror = (error) => {
-                        console.error('SSE connection error:', error);
-                        eventSource.close();
-                        this.state.isLoading = false;
-                        
-                        // Remove thinking indicator if still showing
-                        if (!firstChunkReceived) {
-                            this.setLoadingIndicator(false);
-                        }
-                        
-                        resolve(false); // Streaming failed, will fallback
-                    };
-                    
-                    // Close connection on timeout (60 seconds)
-                    setTimeout(() => {
-                        if (eventSource.readyState !== EventSource.CLOSED) {
-                            eventSource.close();
-                            this.state.isLoading = false;
-                            
-                            // Remove thinking indicator if still showing
-                            if (!firstChunkReceived) {
-                                this.setLoadingIndicator(false);
-                            }
-                            
-                            resolve(false);
-                        }
-                    }, 60000);
-                    
-                } catch (error) {
-                    console.error('Failed to initialize streaming:', error);
-                    this.state.isLoading = false;
-                    this.setLoadingIndicator(false); // Remove thinking indicator on init error
-                    resolve(false); // Streaming failed, will fallback
+            try {
+                // Fetch complete response from server (no streaming)
+                const formData = new FormData();
+                formData.append('action', 'hello_chatbot_send_message');
+                formData.append('nonce', this.config.nonce);
+                formData.append('message', text);
+                formData.append('page_context', `On page: ${document.title} (${location.pathname})`);
+
+                const response = await fetch(this.config.ajaxUrl, {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const data = await response.json();
+
+                if (!data.success) {
+                    console.error('Request failed:', data.data);
+                    return false;
                 }
-            });
+
+                // Got complete response - now simulate streaming client-side
+                const fullText = data.data.answer;
+                const references = data.data.references || [];
+
+                // Create assistant message that will be updated with fake chunks
+                const assistantMsgId = 'msg-' + Date.now();
+                const assistantMsg = {
+                    id: assistantMsgId,
+                    role: 'assistant',
+                    content: '',
+                    timestamp: this.getCurrentTime(),
+                    references: references
+                };
+
+                // Add message to state and create DOM element
+                this.addMessage(assistantMsg);
+                this.setLoadingIndicator(false);
+                const messageElement = this.appendMessage(assistantMsg);
+                const contentElement = messageElement?.querySelector('.chatbot-message-content');
+                const textElement = contentElement?.querySelector('.chatbot-message-text');
+
+                if (!textElement) {
+                    console.error('Could not find text element for streaming');
+                    return false;
+                }
+
+                // Animate text appearing word by word
+                const words = fullText.split(' ');
+                let accumulatedText = '';
+
+                for (let i = 0; i < words.length; i++) {
+                    accumulatedText += (i > 0 ? ' ' : '') + words[i];
+
+                    // Update message content
+                    assistantMsg.content = accumulatedText;
+                    this.updateMessage(assistantMsgId, assistantMsg);
+
+                    // Update DOM with formatted content
+                    textElement.innerHTML = this.formatMessage(accumulatedText);
+
+                    // Scroll to bottom to show new content
+                    this.scrollToBottom();
+
+                    // Wait 50ms before showing next word (simulate streaming speed)
+                    await new Promise(resolve => setTimeout(resolve, 50));
+                }
+
+                // After text completes, add references if available
+                if (references && references.length > 0) {
+                    const referencesHTML = this.buildReferencesHTML(references);
+                    textElement.insertAdjacentHTML('afterend', referencesHTML);
+                    this.scrollToBottom();
+                }
+
+                this.state.isLoading = false;
+                return true;
+
+            } catch (error) {
+                console.error('Fake streaming error:', error);
+                this.state.isLoading = false;
+                this.setLoadingIndicator(false);
+                return false;
+            }
         }
         
         /**
