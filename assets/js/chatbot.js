@@ -779,8 +779,7 @@
                     id: assistantMsgId,
                     role: 'assistant',
                     content: '',
-                    timestamp: this.getCurrentTime(),
-                    references: references
+                    timestamp: this.getCurrentTime()
                 };
 
                 // Add message to state and create DOM element
@@ -818,6 +817,11 @@
 
                 // After text completes, add references if available
                 if (references && references.length > 0) {
+                    // Add references to the message object
+                    assistantMsg.references = references;
+                    this.updateMessage(assistantMsgId, assistantMsg);
+
+                    // Add references HTML to DOM
                     const referencesHTML = this.buildReferencesHTML(references);
                     textElement.insertAdjacentHTML('afterend', referencesHTML);
                     this.scrollToBottom();
