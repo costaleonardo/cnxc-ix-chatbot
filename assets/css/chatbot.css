@@ -735,7 +735,9 @@
 .chatbot-references-toggle {
     transition: transform 0.2s;
     color: var(--chatbot-text-secondary);
-    font-size: 18px;
+    display: inline-flex;
+    align-items: center;
+    line-height: 0;
 }
 
 .chatbot-references.expanded .chatbot-references-toggle {
