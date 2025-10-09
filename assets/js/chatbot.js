@@ -905,7 +905,7 @@
                 const index = session.messages.findIndex(m => m.id === messageId);
                 if (index !== -1) {
                     session.messages[index] = updatedMessage;
-                    this.sessionManager.saveSession(session);
+                    this.sessionManager.updateSession(session.id, { messages: session.messages });
                 }
             }
         }
@@ -1109,7 +1109,7 @@
                 } else if (newViewMode === 'chat') {
                     // Remove list view
                     if (existingList) existingList.remove();
-                    
+
                     // Add chat view elements if not present
                     if (!existingMessages) {
                         const messagesHTML = `
@@ -1118,6 +1118,9 @@
                             </div>
                         `;
                         container.querySelector('.chatbot-header').insertAdjacentHTML('afterend', messagesHTML);
+                    } else {
+                        // Messages container exists, but we need to update its content with current session messages
+                        existingMessages.innerHTML = this.buildMessagesHTML();
                     }
                     
                     if (!existingInput) {
