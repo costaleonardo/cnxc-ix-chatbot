@@ -209,7 +209,7 @@
                                     ${this.getSendIcon()}
                                 </button>
                             </form>
-                            <div class="chatbot-input-footer"><span>Powered by </span> <span><a href="/ix-hello/">iX Hello</a></span></div>
+                            <div class="chatbot-input-footer"><span>Powered by</span> <span><a href="/ix-hello/">iX Hello</a></span></div>
                         </div>
                     ` : `
                         <!-- Chat List View -->
@@ -274,7 +274,11 @@
                 <div class="chatbot-references">
                     <div class="chatbot-references-header">
                         <span>${this.config.strings.references} (${references.length})</span>
-                        <span class="chatbot-references-toggle">⌄</span>
+                        <span class="chatbot-references-toggle">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M11.9998 10.7749L8.0998 14.6749C7.91647 14.8582 7.68314 14.9499 7.3998 14.9499C7.11647 14.9499 6.88314 14.8582 6.6998 14.6749C6.51647 14.4916 6.4248 14.2582 6.4248 13.9749C6.4248 13.6916 6.51647 13.4582 6.6998 13.2749L11.2998 8.6749C11.3998 8.5749 11.5081 8.50407 11.6248 8.4624C11.7415 8.42074 11.8665 8.3999 11.9998 8.3999C12.1331 8.3999 12.2581 8.42074 12.3748 8.4624C12.4915 8.50407 12.5998 8.5749 12.6998 8.6749L17.2998 13.2749C17.4831 13.4582 17.5748 13.6916 17.5748 13.9749C17.5748 14.2582 17.4831 14.4916 17.2998 14.6749C17.1165 14.8582 16.8831 14.9499 16.5998 14.9499C16.3165 14.9499 16.0831 14.8582 15.8998 14.6749L11.9998 10.7749Z" fill="currentColor"/>
+                            </svg>
+                        </span>
                     </div>
                     <div class="chatbot-references-list">
                         ${references.map(ref => {
@@ -905,7 +909,7 @@
                 const index = session.messages.findIndex(m => m.id === messageId);
                 if (index !== -1) {
                     session.messages[index] = updatedMessage;
-                    this.sessionManager.saveSession(session);
+                    this.sessionManager.updateSession(session.id, { messages: session.messages });
                 }
             }
         }
@@ -1109,7 +1113,7 @@
                 } else if (newViewMode === 'chat') {
                     // Remove list view
                     if (existingList) existingList.remove();
-                    
+
                     // Add chat view elements if not present
                     if (!existingMessages) {
                         const messagesHTML = `
@@ -1118,6 +1122,9 @@
                             </div>
                         `;
                         container.querySelector('.chatbot-header').insertAdjacentHTML('afterend', messagesHTML);
+                    } else {
+                        // Messages container exists, but we need to update its content with current session messages
+                        existingMessages.innerHTML = this.buildMessagesHTML();
                     }
                     
                     if (!existingInput) {
@@ -1134,7 +1141,7 @@
                                         ${this.getSendIcon()}
                                     </button>
                                 </form>
-                                <div class="chatbot-input-footer"><span>Powered by </span> <span><a href="/ix-hello/">iX Hello</a></span></div>
+                                <div class="chatbot-input-footer"><span>Powered by</span> <span><a href="/ix-hello/">iX Hello</a></span></div>
                             </div>
                         `;
                         container.insertAdjacentHTML('beforeend', inputHTML);

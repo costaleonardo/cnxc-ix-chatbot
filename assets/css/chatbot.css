@@ -496,9 +496,10 @@
 }
 
 .chatbot-message-user .chatbot-message-text {
-    /* background: var(--chatbot-primary); */
+    background: #F1F2F4;
     color: #2A2B2C;
-    border-radius: 12px 12px 4px 12px;
+    border-radius: 16px;
+    padding: 8px 16px;
     border: none;
 }
 
@@ -735,7 +736,9 @@
 .chatbot-references-toggle {
     transition: transform 0.2s;
     color: var(--chatbot-text-secondary);
-    font-size: 18px;
+    display: inline-flex;
+    align-items: center;
+    line-height: 0;
 }
 
 .chatbot-references.expanded .chatbot-references-toggle {
