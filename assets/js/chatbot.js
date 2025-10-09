@@ -25,7 +25,9 @@
                 sessions: [],
                 viewMode: 'chat', // 'chat' or 'list' - controls which view is shown
                 showTooltip: false, // Will be set in init() based on page load count and other conditions
-                showInfoTooltip: false // For info button tooltip
+                showInfoTooltip: false, // For info button tooltip
+                showRefreshTooltip: false, // For refresh button tooltip
+                showMinimizeTooltip: false // For minimize button tooltip
             };
             
             this.elements = {};
@@ -167,12 +169,24 @@
                                         </div>
                                     </div>
                                 </div>
-                                <button id="chatbot-refresh-btn" class="chatbot-control-btn" aria-label="New chat" title="Restart conversation">
-                                    ${this.getRefreshIcon()}
-                                </button>` : ''}
-                            <button id="chatbot-minimize-btn" class="chatbot-control-btn" aria-label="Minimize" title="Close the chat window">
-                                ${this.getMinimizeIcon()}
-                            </button>
+                                <div class="chatbot-refresh-wrapper">
+                                    <button id="chatbot-refresh-btn" class="chatbot-control-btn" aria-label="New chat">
+                                        ${this.getRefreshIcon()}
+                                    </button>
+                                    <!-- Refresh Tooltip -->
+                                    <div id="chatbot-refresh-tooltip" class="chatbot-refresh-tooltip ${this.state.showRefreshTooltip ? 'show' : ''}">
+                                        <p>Start a new conversation</p>
+                                    </div>
+                                </div>` : ''}
+                            <div class="chatbot-minimize-wrapper">
+                                <button id="chatbot-minimize-btn" class="chatbot-control-btn" aria-label="Minimize">
+                                    ${this.getMinimizeIcon()}
+                                </button>
+                                <!-- Minimize Tooltip -->
+                                <div id="chatbot-minimize-tooltip" class="chatbot-minimize-tooltip ${this.state.showMinimizeTooltip ? 'show' : ''}">
+                                    <p>Close chatbot</p>
+                                </div>
+                            </div>
                         </div>
                     </div>
                     
@@ -372,6 +386,8 @@
                 form: document.getElementById('chatbot-form'),
                 tooltip: document.getElementById('chatbot-tooltip'),
                 infoTooltip: document.getElementById('chatbot-info-tooltip'),
+                refreshTooltip: document.getElementById('chatbot-refresh-tooltip'),
+                minimizeTooltip: document.getElementById('chatbot-minimize-tooltip'),
                 backBtn: document.getElementById('chatbot-back-btn'),
                 infoBtn: document.getElementById('chatbot-info-btn'),
                 refreshBtn: document.getElementById('chatbot-refresh-btn'),
@@ -394,6 +410,20 @@
             if (infoWrapper) {
                 infoWrapper.addEventListener('mouseenter', () => this.showInfoTooltip());
                 infoWrapper.addEventListener('mouseleave', () => this.hideInfoTooltip());
+            }
+
+            // Refresh button and tooltip hover handlers
+            const refreshWrapper = document.querySelector('.chatbot-refresh-wrapper');
+            if (refreshWrapper) {
+                refreshWrapper.addEventListener('mouseenter', () => this.showRefreshTooltip());
+                refreshWrapper.addEventListener('mouseleave', () => this.hideRefreshTooltip());
+            }
+
+            // Minimize button and tooltip hover handlers
+            const minimizeWrapper = document.querySelector('.chatbot-minimize-wrapper');
+            if (minimizeWrapper) {
+                minimizeWrapper.addEventListener('mouseenter', () => this.showMinimizeTooltip());
+                minimizeWrapper.addEventListener('mouseleave', () => this.hideMinimizeTooltip());
             }
             
             // Back button (to switch to list view)
@@ -544,7 +574,35 @@
                 this.elements.infoTooltip.classList.remove('show');
             }
         }
-        
+
+        showRefreshTooltip() {
+            this.state.showRefreshTooltip = true;
+            if (this.elements.refreshTooltip) {
+                this.elements.refreshTooltip.classList.add('show');
+            }
+        }
+
+        hideRefreshTooltip() {
+            this.state.showRefreshTooltip = false;
+            if (this.elements.refreshTooltip) {
+                this.elements.refreshTooltip.classList.remove('show');
+            }
+        }
+
+        showMinimizeTooltip() {
+            this.state.showMinimizeTooltip = true;
+            if (this.elements.minimizeTooltip) {
+                this.elements.minimizeTooltip.classList.add('show');
+            }
+        }
+
+        hideMinimizeTooltip() {
+            this.state.showMinimizeTooltip = false;
+            if (this.elements.minimizeTooltip) {
+                this.elements.minimizeTooltip.classList.remove('show');
+            }
+        }
+
         startNewChat() {
             if (confirm('Start a new conversation?')) {
                 // Clear the DOM cache for current session
@@ -1114,9 +1172,15 @@
                     if (backBtn) backBtn.remove();
                     // Only show minimize button in list view
                     controls.innerHTML = `
-                        <button id="chatbot-minimize-btn" class="chatbot-control-btn" aria-label="Minimize">
-                            ${this.getMinimizeIcon()}
-                        </button>
+                        <div class="chatbot-minimize-wrapper">
+                            <button id="chatbot-minimize-btn" class="chatbot-control-btn" aria-label="Minimize">
+                                ${this.getMinimizeIcon()}
+                            </button>
+                            <!-- Minimize Tooltip -->
+                            <div id="chatbot-minimize-tooltip" class="chatbot-minimize-tooltip ${this.state.showMinimizeTooltip ? 'show' : ''}">
+                                <p>Close chatbot</p>
+                            </div>
+                        </div>
                     `;
                 } else {
                     // Add back button if not present and there are sessions
@@ -1145,28 +1209,56 @@
                                 </div>
                             </div>
                         </div>
-                        <button id="chatbot-refresh-btn" class="chatbot-control-btn" aria-label="New chat" title="Restart conversation">
-                            ${this.getRefreshIcon()}
-                        </button>
-                        <button id="chatbot-minimize-btn" class="chatbot-control-btn" aria-label="Minimize" title="Close the chat window">
-                            ${this.getMinimizeIcon()}
-                        </button>
+                        <div class="chatbot-refresh-wrapper">
+                            <button id="chatbot-refresh-btn" class="chatbot-control-btn" aria-label="New chat">
+                                ${this.getRefreshIcon()}
+                            </button>
+                            <!-- Refresh Tooltip -->
+                            <div id="chatbot-refresh-tooltip" class="chatbot-refresh-tooltip ${this.state.showRefreshTooltip ? 'show' : ''}">
+                                <p>Start a new conversation</p>
+                            </div>
+                        </div>
+                        <div class="chatbot-minimize-wrapper">
+                            <button id="chatbot-minimize-btn" class="chatbot-control-btn" aria-label="Minimize">
+                                ${this.getMinimizeIcon()}
+                            </button>
+                            <!-- Minimize Tooltip -->
+                            <div id="chatbot-minimize-tooltip" class="chatbot-minimize-tooltip ${this.state.showMinimizeTooltip ? 'show' : ''}">
+                                <p>Close chatbot</p>
+                            </div>
+                        </div>
                     `;
                 }
                 
                 // Update cached elements
                 this.elements.infoTooltip = document.getElementById('chatbot-info-tooltip');
-                
+                this.elements.refreshTooltip = document.getElementById('chatbot-refresh-tooltip');
+                this.elements.minimizeTooltip = document.getElementById('chatbot-minimize-tooltip');
+
                 // Reattach header button listeners
                 document.getElementById('chatbot-minimize-btn')?.addEventListener('click', () => this.closeChat());
                 document.getElementById('chatbot-back-btn')?.addEventListener('click', () => this.switchToListView());
                 document.getElementById('chatbot-refresh-btn')?.addEventListener('click', () => this.startNewChat());
-                
+
                 // Info button and tooltip hover handlers
                 const infoWrapper = document.querySelector('.chatbot-info-wrapper');
                 if (infoWrapper) {
                     infoWrapper.addEventListener('mouseenter', () => this.showInfoTooltip());
                     infoWrapper.addEventListener('mouseleave', () => this.hideInfoTooltip());
+                }
+
+                // Refresh button and tooltip hover handlers
+                const refreshWrapper = document.querySelector('.chatbot-refresh-wrapper');
+                if (refreshWrapper) {
+                    refreshWrapper.addEventListener('mouseenter', () => this.showRefreshTooltip());
+                    refreshWrapper.addEventListener('mouseleave', () => this.hideRefreshTooltip());
+                }
+
+                // Minimize button and tooltip hover handlers
+                const minimizeWrapper = document.querySelector('.chatbot-minimize-wrapper');
+                if (minimizeWrapper) {
+                    minimizeWrapper.addEventListener('mouseenter', () => this.showMinimizeTooltip());
+                    minimizeWrapper.addEventListener('mouseleave', () => this.hideMinimizeTooltip());
                 }
                 
                 // Complete transition
