@@ -182,7 +182,7 @@
                                     </button>
                                     <!-- Refresh Tooltip -->
                                     <div id="chatbot-refresh-tooltip" class="chatbot-refresh-tooltip ${this.state.showRefreshTooltip ? 'show' : ''}">
-                                        <p>Start a new conversation</p>
+                                        <p>Restart conversation</p>
                                     </div>
                                 </div>` : ''}
                             <div class="chatbot-minimize-wrapper">
@@ -191,7 +191,7 @@
                                 </button>
                                 <!-- Minimize Tooltip -->
                                 <div id="chatbot-minimize-tooltip" class="chatbot-minimize-tooltip ${this.state.showMinimizeTooltip ? 'show' : ''}">
-                                    <p>Close chatbot</p>
+                                    <p>Close the chat window</p>
                                 </div>
                             </div>
                         </div>
@@ -283,7 +283,7 @@
                         <span>${this.config.strings.references} (${references.length})</span>
                         <span class="chatbot-references-toggle">
                             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                <path d="M11.9998 10.7749L8.0998 14.6749C7.91647 14.8582 7.68314 14.9499 7.3998 14.9499C7.11647 14.9499 6.88314 14.8582 6.6998 14.6749C6.51647 14.4916 6.4248 14.2582 6.4248 13.9749C6.4248 13.6916 6.51647 13.4582 6.6998 13.2749L11.2998 8.6749C11.3998 8.5749 11.5081 8.50407 11.6248 8.4624C11.7415 8.42074 11.8665 8.3999 11.9998 8.3999C12.1331 8.3999 12.2581 8.42074 12.3748 8.4624C12.4915 8.50407 12.5998 8.5749 12.6998 8.6749L17.2998 13.2749C17.4831 13.4582 17.5748 13.6916 17.5748 13.9749C17.5748 14.2582 17.4831 14.4916 17.2998 14.6749C17.1165 14.8582 16.8831 14.9499 16.5998 14.9499C16.3165 14.9499 16.0831 14.8582 15.8998 14.6749L11.9998 10.7749Z" fill="currentColor"/>
+                                <path d="M11.9998 13.2251L8.0998 9.32506C7.91647 9.14173 7.68314 9.05006 7.3998 9.05006C7.11647 9.05006 6.88314 9.14173 6.6998 9.32506C6.51647 9.50839 6.4248 9.74173 6.4248 10.0251C6.4248 10.3084 6.51647 10.5418 6.6998 10.7251L11.2998 15.3251C11.3998 15.4251 11.5081 15.4959 11.6248 15.5376C11.7415 15.5793 11.8665 15.6001 11.9998 15.6001C12.1331 15.6001 12.2581 15.5793 12.3748 15.5376C12.4915 15.4959 12.5998 15.4251 12.6998 15.3251L17.2998 10.7251C17.4831 10.5418 17.5748 10.3084 17.5748 10.0251C17.5748 9.74173 17.4831 9.50839 17.2998 9.32506C17.1165 9.14173 16.8831 9.05006 16.5998 9.05006C16.3165 9.05006 16.0831 9.14173 15.8998 9.32506L11.9998 13.2251Z" fill="currentColor"/>
                             </svg>
                         </span>
                     </div>
@@ -1098,10 +1098,15 @@
             
             // Track the timeout
             const transitionTimeout = setTimeout(() => {
+                // Load session data BEFORE updating viewMode to avoid race condition
                 if (newViewMode === 'chat' && sessionId && sessionId !== this.state.currentSession?.id) {
-                    this.switchSession(sessionId);
+                    const session = this.sessionManager.setActiveSession(sessionId);
+                    if (session) {
+                        this.state.currentSession = session;
+                        this.state.messages = session.messages || [];
+                    }
                 }
-                
+
                 this.state.viewMode = newViewMode;
                 
                 // Remove existing content areas
@@ -1214,7 +1219,7 @@
                             </button>
                             <!-- Minimize Tooltip -->
                             <div id="chatbot-minimize-tooltip" class="chatbot-minimize-tooltip ${this.state.showMinimizeTooltip ? 'show' : ''}">
-                                <p>Close chatbot</p>
+                                <p>Close the chat window</p>
                             </div>
                         </div>
                     `;
@@ -1257,7 +1262,7 @@
                             </button>
                             <!-- Refresh Tooltip -->
                             <div id="chatbot-refresh-tooltip" class="chatbot-refresh-tooltip ${this.state.showRefreshTooltip ? 'show' : ''}">
-                                <p>Start a new conversation</p>
+                                <p>Restart conversation</p>
                             </div>
                         </div>
                         <div class="chatbot-minimize-wrapper">
@@ -1266,7 +1271,7 @@
                             </button>
                             <!-- Minimize Tooltip -->
                             <div id="chatbot-minimize-tooltip" class="chatbot-minimize-tooltip ${this.state.showMinimizeTooltip ? 'show' : ''}">
-                                <p>Close chatbot</p>
+                                <p>Close the chat window</p>
                             </div>
                         </div>
                     `;
@@ -1475,12 +1480,20 @@
                 }
                 // Not a list item
                 else {
-                    if (inList) {
-                        processedLines.push(`</${listType}>`);
-                        inList = false;
-                        listType = null;
+                    // If we're in a list and hit a blank line, keep the list open
+                    // Only close the list if we hit actual content that's not a list item
+                    if (line.trim().length === 0) {
+                        // Blank line - preserve it but don't close the list
+                        processedLines.push(line);
+                    } else {
+                        // Non-blank, non-list line - close any open list
+                        if (inList) {
+                            processedLines.push(`</${listType}>`);
+                            inList = false;
+                            listType = null;
+                        }
+                        processedLines.push(line);
                     }
-                    processedLines.push(line);
                 }
             });
             
@@ -1490,26 +1503,34 @@
             }
             
             processedContent = processedLines.join('\n');
-            
+
             // Convert content to paragraphs instead of line breaks
             // Split on double newlines for paragraph breaks, single newlines become spaces within paragraphs
             const paragraphs = processedContent.split(/\n\n+/).filter(p => p.trim().length > 0);
-            
+
             if (paragraphs.length > 1) {
                 // Multiple paragraphs - wrap each in <p> tags
                 processedContent = paragraphs.map(paragraph => {
-                    const cleanParagraph = paragraph.replace(/\n/g, ' ').trim();
-                    return cleanParagraph ? `<p>${cleanParagraph}</p>` : '';
+                    // Check if this paragraph contains block elements (lists, headers, etc.)
+                    const hasBlockElements = /<(h[1-6]|ul|ol|li|pre|blockquote|div)>/i.test(paragraph);
+                    if (hasBlockElements) {
+                        // Don't collapse newlines for block elements - they need structure preserved
+                        return paragraph.trim();
+                    } else {
+                        // Regular text - collapse newlines and wrap in <p>
+                        const cleanParagraph = paragraph.replace(/\n/g, ' ').trim();
+                        return cleanParagraph ? `<p>${cleanParagraph}</p>` : '';
+                    }
                 }).filter(p => p.length > 0).join('');
             } else if (paragraphs.length === 1) {
                 // Single paragraph - wrap in <p> if it doesn't already contain block elements
-                const hasBlockElements = /<(h[1-6]|ul|ol|pre|blockquote|div)>/i.test(processedContent);
+                const hasBlockElements = /<(h[1-6]|ul|ol|li|pre|blockquote|div)>/i.test(processedContent);
                 if (!hasBlockElements) {
                     const cleanContent = processedContent.replace(/\n/g, ' ').trim();
                     processedContent = cleanContent ? `<p>${cleanContent}</p>` : '';
                 } else {
-                    // Contains block elements, just clean up newlines
-                    processedContent = processedContent.replace(/\n/g, ' ');
+                    // Contains block elements - don't collapse newlines, just trim
+                    processedContent = processedContent.trim();
                 }
             }
             

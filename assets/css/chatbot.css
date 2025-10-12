@@ -381,8 +381,8 @@
     position: absolute;
     top: calc(100% + 8px);
     right: 0;
-    background: white;
-    border: 1px solid var(--chatbot-border);
+    background: rgba(97, 97, 97, 0.9);
+    border: none;
     border-radius: 8px;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
     padding: 12px 16px;
@@ -401,7 +401,7 @@
 .chatbot-refresh-tooltip p {
     margin: 0;
     font-size: 14px;
-    color: var(--chatbot-text);
+    color: #ffffff;
     font-weight: 500;
 }
 
@@ -415,8 +415,8 @@
     position: absolute;
     top: calc(100% + 8px);
     right: 0;
-    background: white;
-    border: 1px solid var(--chatbot-border);
+    background: rgba(97, 97, 97, 0.9);
+    border: none;
     border-radius: 8px;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
     padding: 12px 16px;
@@ -435,7 +435,7 @@
 .chatbot-minimize-tooltip p {
     margin: 0;
     font-size: 14px;
-    color: var(--chatbot-text);
+    color: #ffffff;
     font-weight: 500;
 }
 
@@ -505,7 +505,7 @@
 .chatbot-message-sender {
     font-size: 13px;
     color: var(--chatbot-text-secondary);
-    font-weight: 500;
+    font-weight: 400;
 }
 
 .chatbot-message-time {
@@ -604,6 +604,7 @@
 
 .chatbot-message-text ol {
     list-style-type: decimal;
+    list-style-position: outside;
 }
 
 .chatbot-message-text li {
@@ -748,7 +749,7 @@
 
 /* References */
 .chatbot-references {
-    margin-top: 24px;
+    margin-top: 12px;
 }
 
 .chatbot-references-header {
@@ -893,8 +894,9 @@
 
 /* Input Area */
 .chatbot-input-area {
-    padding: 20px;
+    padding: 0 20px 20px 20px;
     background: var(--chatbot-bg);
+    border-radius: 0 0 8px 8px;
     transition: background-color 0.2s ease;
 }
 
