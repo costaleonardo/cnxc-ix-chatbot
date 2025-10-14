@@ -1,0 +1,477 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mobile Scroll Visual Test</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .phone-frame {
+            width: 100%;
+            max-width: 375px;
+            background: #000;
+            border-radius: 40px;
+            padding: 15px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+        }
+
+        .phone-screen {
+            background: #f5f5f5;
+            border-radius: 25px;
+            overflow: hidden;
+            height: 667px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .status-bar {
+            background: white;
+            padding: 8px 20px;
+            display: flex;
+            justify-content: space-between;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .chatbot-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background: white;
+        }
+
+        .chat-header {
+            padding: 16px 20px;
+            background: #2563eb;
+            color: white;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .chat-header h1 {
+            font-size: 18px;
+            font-weight: 600;
+        }
+
+        .chat-messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            -webkit-overflow-scrolling: touch;
+            overscroll-behavior: contain;
+            touch-action: pan-y;
+        }
+
+        .message {
+            padding: 12px 16px;
+            border-radius: 16px;
+            max-width: 80%;
+            animation: slideIn 0.3s ease;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .message.user {
+            background: #F1F2F4;
+            color: #2A2B2C;
+            align-self: flex-end;
+            border-radius: 16px 16px 4px 16px;
+        }
+
+        .message.bot {
+            background: #2563eb;
+            color: white;
+            align-self: flex-start;
+            border-radius: 16px 16px 16px 4px;
+        }
+
+        .message.streaming::after {
+            content: '▋';
+            animation: blink 1s infinite;
+            margin-left: 2px;
+        }
+
+        @keyframes blink {
+            0%, 50% { opacity: 1; }
+            51%, 100% { opacity: 0; }
+        }
+
+        .scroll-indicator {
+            position: fixed;
+            bottom: 100px;
+            right: 20px;
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 12px 16px;
+            border-radius: 12px;
+            font-size: 12px;
+            z-index: 1000;
+            max-width: 200px;
+            pointer-events: none;
+        }
+
+        .scroll-indicator.active {
+            background: #10b981;
+        }
+
+        .scroll-indicator.inactive {
+            background: #ef4444;
+        }
+
+        .chat-input {
+            padding: 12px 16px;
+            background: white;
+            border-top: 1px solid #e5e7eb;
+            display: flex;
+            gap: 8px;
+        }
+
+        .chat-input input {
+            flex: 1;
+            padding: 10px 16px;
+            border: 1px solid #d1d5db;
+            border-radius: 20px;
+            font-size: 14px;
+            outline: none;
+        }
+
+        .chat-input input:focus {
+            border-color: #2563eb;
+        }
+
+        .chat-input button {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            border: none;
+            background: #2563eb;
+            color: white;
+            font-size: 18px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .controls {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            right: 20px;
+            background: white;
+            padding: 16px;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            z-index: 999;
+            max-width: 400px;
+        }
+
+        .controls h2 {
+            font-size: 16px;
+            margin-bottom: 12px;
+            color: #1e293b;
+        }
+
+        .controls button {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 8px;
+            border: none;
+            border-radius: 8px;
+            background: #2563eb;
+            color: white;
+            font-weight: 600;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        .controls button:hover {
+            background: #1d4ed8;
+        }
+
+        .controls button.secondary {
+            background: #64748b;
+        }
+
+        .controls button.secondary:hover {
+            background: #475569;
+        }
+
+        .controls .close-btn {
+            background: #ef4444;
+            margin-top: 8px;
+        }
+
+        .controls .close-btn:hover {
+            background: #dc2626;
+        }
+
+        .controls.hidden {
+            display: none;
+        }
+
+        @media (max-width: 480px) {
+            body {
+                padding: 0;
+            }
+
+            .phone-frame {
+                border-radius: 0;
+                max-width: 100%;
+                padding: 0;
+            }
+
+            .phone-screen {
+                border-radius: 0;
+                height: 100vh;
+            }
+
+            .controls {
+                top: 10px;
+                left: 10px;
+                right: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="controls" id="controls">
+        <h2>🎮 Test Controls</h2>
+        <button onclick="simulateResponse()">Start Streaming Response</button>
+        <button class="secondary" onclick="addQuickMessages()">Add Multiple Messages</button>
+        <button class="secondary" onclick="clearChat()">Clear Chat</button>
+        <button class="close-btn" onclick="toggleControls()">Hide Controls</button>
+    </div>
+
+    <div class="scroll-indicator" id="scrollIndicator">
+        Auto-scroll: <span id="scrollStatus">Active</span>
+    </div>
+
+    <div class="phone-frame">
+        <div class="phone-screen">
+            <div class="status-bar">
+                <span>9:41</span>
+                <span>📶 📱 🔋</span>
+            </div>
+
+            <div class="chatbot-container">
+                <div class="chat-header">
+                    <div style="width: 8px; height: 8px; background: #10b981; border-radius: 50%;"></div>
+                    <h1>Concentrix Bot</h1>
+                </div>
+
+                <div class="chat-messages" id="messages">
+                    <div class="message bot">
+                        👋 Hi! I'm the Concentrix Bot. Try starting a streaming response and then scroll up to see the smart scroll behavior in action!
+                    </div>
+                </div>
+
+                <div class="chat-input">
+                    <input type="text" placeholder="Type a message..." id="messageInput">
+                    <button onclick="sendMessage()">➤</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let isStreaming = false;
+        const messagesContainer = document.getElementById('messages');
+        const scrollIndicator = document.getElementById('scrollIndicator');
+        const scrollStatus = document.getElementById('scrollStatus');
+        const messageInput = document.getElementById('messageInput');
+
+        // Monitor scroll position
+        messagesContainer.addEventListener('scroll', () => {
+            updateScrollIndicator();
+        });
+
+        function isScrolledToBottom() {
+            const threshold = 100;
+            const position = messagesContainer.scrollTop + messagesContainer.clientHeight;
+            const height = messagesContainer.scrollHeight;
+            return position >= height - threshold;
+        }
+
+        function scrollToBottom(force = false) {
+            if (isStreaming && !force) {
+                if (isScrolledToBottom()) {
+                    messagesContainer.scrollTop = messagesContainer.scrollHeight;
+                }
+            } else {
+                messagesContainer.scrollTop = messagesContainer.scrollHeight;
+            }
+        }
+
+        function updateScrollIndicator() {
+            const atBottom = isScrolledToBottom();
+
+            if (isStreaming) {
+                if (atBottom) {
+                    scrollIndicator.className = 'scroll-indicator active';
+                    scrollStatus.textContent = 'Active ✅';
+                } else {
+                    scrollIndicator.className = 'scroll-indicator inactive';
+                    scrollStatus.textContent = 'Paused (scrolled up) ⏸️';
+                }
+            } else {
+                scrollIndicator.className = 'scroll-indicator';
+                scrollStatus.textContent = 'Ready';
+            }
+        }
+
+        async function simulateResponse() {
+            if (isStreaming) return;
+
+            // Add user message
+            addMessage('user', 'Tell me about mobile scroll optimization');
+
+            // Create bot message
+            const messageEl = document.createElement('div');
+            messageEl.className = 'message bot streaming';
+            messagesContainer.appendChild(messageEl);
+
+            isStreaming = true;
+            updateScrollIndicator();
+
+            const response = `Mobile scroll optimization is crucial for chatbot interfaces. The key is implementing smart auto-scrolling that respects user intent. When a user scrolls up to read previous messages, the system should detect this and pause auto-scrolling. This allows users to review conversation history without fighting against automatic scroll behavior. However, when the user scrolls back to the bottom, auto-scrolling should gracefully resume. The technical implementation involves tracking scroll position, detecting user gestures, and using proper CSS properties like touch-action and overscroll-behavior. Modern mobile browsers support these features well, providing smooth and intuitive scrolling experiences. The result is a chatbot that feels responsive and respectful of user control.`;
+
+            const words = response.split(' ');
+            let text = '';
+
+            for (let i = 0; i < words.length; i++) {
+                text += (i > 0 ? ' ' : '') + words[i];
+                messageEl.textContent = text;
+                scrollToBottom();
+                updateScrollIndicator();
+                await new Promise(resolve => setTimeout(resolve, 80));
+            }
+
+            messageEl.classList.remove('streaming');
+            isStreaming = false;
+            updateScrollIndicator();
+
+            // Add a follow-up quick message
+            setTimeout(() => {
+                addMessage('bot', 'Try scrolling up and down! Notice how the scroll behavior changes during streaming. 🚀');
+            }, 500);
+        }
+
+        function addMessage(type, text) {
+            const messageEl = document.createElement('div');
+            messageEl.className = `message ${type}`;
+            messageEl.textContent = text;
+            messagesContainer.appendChild(messageEl);
+            scrollToBottom(true);
+        }
+
+        function sendMessage() {
+            const text = messageInput.value.trim();
+            if (!text) return;
+
+            addMessage('user', text);
+            messageInput.value = '';
+
+            setTimeout(() => {
+                simulateResponse();
+            }, 500);
+        }
+
+        function addQuickMessages() {
+            addMessage('user', 'How does this work?');
+            addMessage('bot', 'Great question! The chatbot uses smart scrolling.');
+            addMessage('user', 'What about on mobile?');
+            addMessage('bot', 'Mobile scrolling is optimized with touch-action and proper event handling.');
+            addMessage('user', 'Can I scroll during responses?');
+            addMessage('bot', 'Yes! Scroll up anytime during streaming, and auto-scroll will pause automatically.');
+        }
+
+        function clearChat() {
+            messagesContainer.innerHTML = `
+                <div class="message bot">
+                    Chat cleared! Send a message or start a streaming response to test the behavior.
+                </div>
+            `;
+            updateScrollIndicator();
+        }
+
+        function toggleControls() {
+            const controls = document.getElementById('controls');
+            controls.classList.toggle('hidden');
+
+            if (controls.classList.contains('hidden')) {
+                // Create a floating button to show controls again
+                if (!document.getElementById('showControls')) {
+                    const btn = document.createElement('button');
+                    btn.id = 'showControls';
+                    btn.textContent = '🎮';
+                    btn.style.cssText = `
+                        position: fixed;
+                        top: 20px;
+                        right: 20px;
+                        width: 50px;
+                        height: 50px;
+                        border-radius: 50%;
+                        border: none;
+                        background: #2563eb;
+                        color: white;
+                        font-size: 24px;
+                        cursor: pointer;
+                        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+                        z-index: 1000;
+                    `;
+                    btn.onclick = () => {
+                        controls.classList.remove('hidden');
+                        btn.remove();
+                    };
+                    document.body.appendChild(btn);
+                }
+            } else {
+                const btn = document.getElementById('showControls');
+                if (btn) btn.remove();
+            }
+        }
+
+        // Handle enter key in input
+        messageInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                sendMessage();
+            }
+        });
+
+        // Initialize
+        updateScrollIndicator();
+    </script>
+</body>
+</html>

@@ -448,10 +448,11 @@
     flex-direction: column;
     gap: 16px;
     background: var(--chatbot-bg);
-    transform: translateZ(0);
-    backface-visibility: hidden;
     -webkit-overflow-scrolling: touch;
-    contain: layout style paint;
+    /* Removed contain property to fix mobile scroll issues */
+    /* Removed transform and backface-visibility to fix mobile touch scrolling after streaming */
+    overscroll-behavior: contain;
+    touch-action: pan-y;
 }
 
 .chatbot-messages::-webkit-scrollbar {
@@ -997,10 +998,11 @@
     flex-direction: column;
     padding: 20px;
     overflow-y: auto;
-    transform: translateZ(0);
-    backface-visibility: hidden;
     -webkit-overflow-scrolling: touch;
-    contain: layout style paint;
+    /* Removed contain property to fix mobile scroll issues */
+    /* Removed transform and backface-visibility to fix mobile touch scrolling after streaming */
+    overscroll-behavior: contain;
+    touch-action: pan-y;
 }
 
 .chatbot-list-view::-webkit-scrollbar {

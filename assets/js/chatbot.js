@@ -33,14 +33,22 @@
             
             this.elements = {};
             this.messageDOMCache = new Map(); // Cache message DOM elements per session
-            
+
             // Transition state management
             this.transitionState = {
                 isTransitioning: false,
                 pendingTimeouts: [],
                 currentTransition: null
             };
-            
+
+            // Scroll behavior tracking
+            this.scrollState = {
+                userHasScrolledUp: false,
+                isStreaming: false,
+                scrollListener: null,
+                streamingTimeout: null
+            };
+
             this.init();
         }
         
@@ -485,7 +493,10 @@
                 this.state.showTooltip = false;
                 this.elements.tooltip.classList.remove('show');
             });
-            
+
+            // Note: Scroll listener is now attached dynamically when streaming starts
+            // and removed when streaming ends to prevent mobile touch interference
+
             // Action button clicks
             document.addEventListener('click', (e) => {
                 if (e.target.classList.contains('chatbot-action-btn')) {
@@ -555,6 +566,8 @@
                 this.state.showTooltip = false;
                 this.elements.tooltip?.classList.remove('show');
                 this.elements.input?.focus();
+                // Reset scroll state when opening to ensure clean state
+                this.resetScrollState();
                 this.scrollToBottom();
             }
         }
@@ -562,20 +575,23 @@
         closeChat() {
             // Cancel any ongoing transitions first
             this.cancelPendingTransitions();
-            
+
+            // Reset scroll state when closing
+            this.resetScrollState();
+
             // Clean up session card states if in list view
             if (this.state.viewMode === 'list') {
                 this.cleanupSessionCardStates();
             }
-            
+
             this.state.isOpen = false;
             this.elements.window.classList.remove('open', 'extended');
-            
+
             // Show the open chat button again
             if (this.elements.button) {
                 this.elements.button.style.display = 'block';
             }
-            
+
             // Save the closed state
             this.sessionManager.saveWidgetState(false);
         }
@@ -638,23 +654,26 @@
 
         startNewChat() {
             if (confirm('Start a new conversation?')) {
+                // Reset scroll state for new chat
+                this.resetScrollState();
+
                 // Clear the DOM cache for current session
                 if (this.state.currentSession) {
                     this.clearMessageCache(this.state.currentSession.id);
                 }
-                
+
                 const session = this.sessionManager.createSession();
                 this.state.currentSession = session;
                 this.state.sessions = this.sessionManager.getAllSessions();
                 this.state.messages = [];
-                
+
                 // Force clear the messages container
                 if (this.elements.messages) {
                     this.elements.messages.innerHTML = '';
                 }
-                
+
                 this.showWelcomeMessage();
-                
+
                 // If we're in list view, switch to chat view
                 if (this.state.viewMode === 'list') {
                     this.switchToChatView();
@@ -761,6 +780,10 @@
         }
         
         async sendMessage(text) {
+            // Reset scroll state before starting new message
+            // This ensures we start with clean state for each message
+            this.resetScrollState();
+
             // Add user message with smooth animation
             const userMsg = {
                 id: 'msg-' + Date.now(),
@@ -768,10 +791,10 @@
                 content: text,
                 timestamp: this.getCurrentTime()
             };
-            
+
             this.addMessage(userMsg);
             this.appendMessage(userMsg);
-            
+
             // Show loading indicator smoothly
             this.state.isLoading = true;
             this.setLoadingIndicator(true);
@@ -889,6 +912,20 @@
                 const words = fullText.split(' ');
                 let accumulatedText = '';
 
+                // Mark that streaming has started
+                this.scrollState.isStreaming = true;
+                this.scrollState.userHasScrolledUp = false;
+
+                // Attach scroll listener for this streaming session
+                this.attachScrollListener();
+
+                // Failsafe: Auto-reset streaming state after 30 seconds
+                // This prevents permanently stuck states if something goes wrong
+                this.scrollState.streamingTimeout = setTimeout(() => {
+                    console.warn('Streaming timeout reached - auto-resetting scroll state');
+                    this.resetScrollState();
+                }, 30000);
+
                 for (let i = 0; i < words.length; i++) {
                     accumulatedText += (i > 0 ? ' ' : '') + words[i];
 
@@ -899,7 +936,7 @@
                     // Update DOM with formatted content
                     textElement.innerHTML = this.formatMessage(accumulatedText);
 
-                    // Scroll to bottom to show new content
+                    // Smart scroll: only scroll if user is already at bottom
                     this.scrollToBottom();
 
                     // Wait 50ms before showing next word (simulate streaming speed)
@@ -918,6 +955,12 @@
                     this.scrollToBottom();
                 }
 
+                // Do one final scroll to bottom before cleaning up
+                this.scrollToBottom();
+
+                // Streaming finished - reset state (this will detach the scroll listener)
+                this.resetScrollState();
+
                 this.state.isLoading = false;
                 return true;
 
@@ -925,6 +968,8 @@
                 console.error('Fake streaming error:', error);
                 this.state.isLoading = false;
                 this.setLoadingIndicator(false);
+                // Reset streaming state on error (properly cleans up listener and timeout)
+                this.resetScrollState();
                 return false;
             }
         }
@@ -1185,7 +1230,7 @@
                     this.elements.messages = document.getElementById('chatbot-messages');
                     this.elements.form = document.getElementById('chatbot-form');
                     this.elements.input = document.getElementById('chatbot-input');
-                    
+
                     // Reattach form listeners
                     this.elements.form?.addEventListener('submit', (e) => this.handleSubmit(e));
                     this.elements.input?.addEventListener('input', () => this.autoResizeInput());
@@ -1195,7 +1240,10 @@
                             this.handleSubmit(e);
                         }
                     });
-                    
+
+                    // CRITICAL: Reattach scroll listener after DOM replacement
+                    this.attachScrollListener();
+
                     this.scrollToBottom();
                 }
                 
@@ -1367,10 +1415,79 @@
             this.transitionToView('chat', sessionId);
         }
         
-        scrollToBottom() {
-            if (this.elements.messages) {
+        /**
+         * Check if user is scrolled near the bottom of messages
+         */
+        isScrolledToBottom() {
+            if (!this.elements.messages) return true;
+            const threshold = 100; // pixels from bottom
+            const position = this.elements.messages.scrollTop + this.elements.messages.clientHeight;
+            const height = this.elements.messages.scrollHeight;
+            return position >= height - threshold;
+        }
+
+        /**
+         * Scroll to bottom only if user hasn't manually scrolled up
+         * or if force is true
+         */
+        scrollToBottom(force = false) {
+            if (!this.elements.messages) return;
+
+            // During streaming, only auto-scroll if user is already at bottom
+            if (this.scrollState.isStreaming && !force) {
+                if (this.isScrolledToBottom()) {
+                    this.elements.messages.scrollTop = this.elements.messages.scrollHeight;
+                }
+            } else {
+                // Not streaming or forced - always scroll
                 this.elements.messages.scrollTop = this.elements.messages.scrollHeight;
             }
+        }
+
+        /**
+         * Reset scroll state to initial values
+         * Call this before starting new operations or when recovering from errors
+         */
+        resetScrollState() {
+            this.scrollState.isStreaming = false;
+            this.scrollState.userHasScrolledUp = false;
+
+            // Clear any streaming timeout
+            if (this.scrollState.streamingTimeout) {
+                clearTimeout(this.scrollState.streamingTimeout);
+                this.scrollState.streamingTimeout = null;
+            }
+
+            // CRITICAL: Remove scroll listener when not streaming
+            // This prevents interference with native mobile scrolling
+            if (this.scrollState.scrollListener && this.elements.messages) {
+                this.elements.messages.removeEventListener('scroll', this.scrollState.scrollListener);
+                this.scrollState.scrollListener = null;
+            }
+        }
+
+        /**
+         * Attach scroll event listener to messages container
+         * Must be called whenever messages container is recreated/replaced
+         */
+        attachScrollListener() {
+            if (!this.elements.messages) return;
+
+            // Remove existing listener if any (prevents duplicates)
+            if (this.scrollState.scrollListener) {
+                this.elements.messages.removeEventListener('scroll', this.scrollState.scrollListener);
+            }
+
+            // Create and store the listener function
+            this.scrollState.scrollListener = () => {
+                // Only track scroll during streaming
+                if (this.scrollState.isStreaming) {
+                    this.scrollState.userHasScrolledUp = !this.isScrolledToBottom();
+                }
+            };
+
+            // Attach the listener
+            this.elements.messages.addEventListener('scroll', this.scrollState.scrollListener);
         }
         
         autoResizeInput() {
