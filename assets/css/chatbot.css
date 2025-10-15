@@ -1230,8 +1230,8 @@
 
     /* Chat Window - Full width with minimal margins, centered */
     .chatbot-window {
-        width: calc(100vw - 32px);
-        max-width: 100vw;
+        width: 90vw;
+        /* max-width: 100vw; */
         height: calc(100dvh - 100px);
         left: 50%;
         bottom: 68px;
@@ -1244,7 +1244,7 @@
     }
 
     .chatbot-window.open.extended {
-        bottom: 16px;
+        bottom: 0px;
         height: calc(100dvh - 40px);
     }
 
@@ -1529,4 +1529,20 @@
         padding: 10px;
         font-size: 13px;
     }
+}
+
+/* Hide icon tooltips on touch devices (keep info tooltip) */
+@media (hover: none) and (pointer: coarse) {
+    .chatbot-refresh-tooltip,
+    .chatbot-minimize-tooltip,
+    .chatbot-back-tooltip {
+        display: none !important;
+    }
+}
+
+/* Body Scroll Lock - Prevent background page scroll when chatbot is open */
+body.chatbot-open-no-scroll {
+    overflow: hidden !important;
+    position: fixed !important;
+    width: 100% !important;
 }

@@ -49,9 +49,57 @@
                 streamingTimeout: null
             };
 
+            // Detect if device is touch-capable
+            this.isTouchDevice = this.detectTouchDevice();
+
             this.init();
         }
-        
+
+        /**
+         * Detect if device supports touch events
+         */
+        detectTouchDevice() {
+            return ('ontouchstart' in window) ||
+                   (navigator.maxTouchPoints > 0) ||
+                   (navigator.msMaxTouchPoints > 0);
+        }
+
+        /**
+         * Lock body scroll to prevent background page scrolling on mobile
+         * Preserves scroll position to prevent layout shift
+         */
+        lockBodyScroll() {
+            // Store current scroll position
+            const scrollY = window.scrollY || window.pageYOffset;
+
+            // Apply scroll lock class to body
+            document.body.classList.add('chatbot-open-no-scroll');
+
+            // Store scroll position for restoration later
+            document.body.style.top = `-${scrollY}px`;
+
+            // Store the scroll position in a data attribute for unlocking
+            document.body.setAttribute('data-chatbot-scroll-y', scrollY);
+        }
+
+        /**
+         * Unlock body scroll and restore previous scroll position
+         */
+        unlockBodyScroll() {
+            // Get stored scroll position
+            const scrollY = document.body.getAttribute('data-chatbot-scroll-y');
+
+            // Remove scroll lock class and inline styles
+            document.body.classList.remove('chatbot-open-no-scroll');
+            document.body.style.top = '';
+
+            // Restore scroll position
+            if (scrollY !== null) {
+                window.scrollTo(0, parseInt(scrollY, 10));
+                document.body.removeAttribute('data-chatbot-scroll-y');
+            }
+        }
+
         init() {
             this.sessionManager.initialize();
             
@@ -83,6 +131,8 @@
                         this.elements.messages.innerHTML = this.buildMessagesHTML();
                     }
                     this.scrollToBottom();
+                    // Lock body scroll since widget is open
+                    this.lockBodyScroll();
                 }, 100);
             }
         }
@@ -422,31 +472,46 @@
             this.elements.button?.addEventListener('click', () => this.toggleChat());
             
             // Window controls
-            this.elements.minimizeBtn?.addEventListener('click', () => this.closeChat());
-            this.elements.refreshBtn?.addEventListener('click', () => this.startNewChat());
+            this.elements.minimizeBtn?.addEventListener('click', () => {
+                this.hideMinimizeTooltip();
+                this.closeChat();
+            });
+            this.elements.refreshBtn?.addEventListener('click', () => {
+                this.hideRefreshTooltip();
+                this.startNewChat();
+            });
             
-            // Info button and tooltip hover handlers
+            // Info button and tooltip handlers
             const infoWrapper = document.querySelector('.chatbot-info-wrapper');
             if (infoWrapper) {
-                infoWrapper.addEventListener('mouseenter', () => this.showInfoTooltip());
-                infoWrapper.addEventListener('mouseleave', () => this.hideInfoTooltip());
+                if (this.isTouchDevice) {
+                    // On touch devices, toggle tooltip on click
+                    infoWrapper.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        this.toggleTooltip('info');
+                    });
+                } else {
+                    // On desktop, show on hover
+                    infoWrapper.addEventListener('mouseenter', () => this.showInfoTooltip());
+                    infoWrapper.addEventListener('mouseleave', () => this.hideInfoTooltip());
+                }
             }
 
-            // Refresh button and tooltip hover handlers
+            // Refresh button and tooltip handlers (desktop only)
             const refreshWrapper = document.querySelector('.chatbot-refresh-wrapper');
             if (refreshWrapper) {
                 refreshWrapper.addEventListener('mouseenter', () => this.showRefreshTooltip());
                 refreshWrapper.addEventListener('mouseleave', () => this.hideRefreshTooltip());
             }
 
-            // Minimize button and tooltip hover handlers
+            // Minimize button and tooltip handlers (desktop only)
             const minimizeWrapper = document.querySelector('.chatbot-minimize-wrapper');
             if (minimizeWrapper) {
                 minimizeWrapper.addEventListener('mouseenter', () => this.showMinimizeTooltip());
                 minimizeWrapper.addEventListener('mouseleave', () => this.hideMinimizeTooltip());
             }
 
-            // Back button and tooltip hover handlers
+            // Back button and tooltip handlers (desktop only)
             const backWrapper = document.querySelector('.chatbot-back-wrapper');
             if (backWrapper) {
                 backWrapper.addEventListener('mouseenter', () => this.showBackTooltip());
@@ -454,7 +519,10 @@
             }
 
             // Back button (to switch to list view)
-            this.elements.backBtn?.addEventListener('click', () => this.switchToListView());
+            this.elements.backBtn?.addEventListener('click', () => {
+                this.hideBackTooltip();
+                this.switchToListView();
+            });
             
             // Form submission
             this.elements.form?.addEventListener('submit', (e) => this.handleSubmit(e));
@@ -493,6 +561,21 @@
                 this.state.showTooltip = false;
                 this.elements.tooltip.classList.remove('show');
             });
+
+            // Document-level click handler to close info tooltip when clicking outside (mobile)
+            if (this.isTouchDevice) {
+                document.addEventListener('click', (e) => {
+                    if (this.state.showInfoTooltip) {
+                        const clickedInsideWrapper = e.target.closest('.chatbot-info-wrapper');
+                        const clickedInsideTooltip = e.target.closest('.chatbot-info-tooltip');
+
+                        // If clicked outside, hide info tooltip
+                        if (!clickedInsideWrapper && !clickedInsideTooltip) {
+                            this.hideInfoTooltip();
+                        }
+                    }
+                });
+            }
 
             // Note: Scroll listener is now attached dynamically when streaming starts
             // and removed when streaming ends to prevent mobile touch interference
@@ -546,22 +629,22 @@
         toggleChat() {
             this.state.isOpen = !this.state.isOpen;
             this.elements.window.classList.toggle('open', this.state.isOpen);
-            
+
             // Hide/show the open chat button and adjust window position
             if (this.elements.button) {
                 this.elements.button.style.display = this.state.isOpen ? 'none' : 'block';
             }
-            
+
             // Add/remove extended class to fill button space
             if (this.state.isOpen) {
                 this.elements.window.classList.add('extended');
             } else {
                 this.elements.window.classList.remove('extended');
             }
-            
+
             // Save the widget state
             this.sessionManager.saveWidgetState(this.state.isOpen);
-            
+
             if (this.state.isOpen) {
                 this.state.showTooltip = false;
                 this.elements.tooltip?.classList.remove('show');
@@ -569,6 +652,11 @@
                 // Reset scroll state when opening to ensure clean state
                 this.resetScrollState();
                 this.scrollToBottom();
+                // Lock body scroll to prevent background page scrolling
+                this.lockBodyScroll();
+            } else {
+                // Unlock body scroll when closing
+                this.unlockBodyScroll();
             }
         }
         
@@ -591,6 +679,9 @@
             if (this.elements.button) {
                 this.elements.button.style.display = 'block';
             }
+
+            // Unlock body scroll when closing
+            this.unlockBodyScroll();
 
             // Save the closed state
             this.sessionManager.saveWidgetState(false);
@@ -649,6 +740,44 @@
             this.state.showBackTooltip = false;
             if (this.elements.backTooltip) {
                 this.elements.backTooltip.classList.remove('show');
+            }
+        }
+
+        /**
+         * Hide all tooltips - useful for mobile when tapping outside
+         */
+        hideAllTooltips() {
+            this.hideInfoTooltip();
+            this.hideRefreshTooltip();
+            this.hideMinimizeTooltip();
+            this.hideBackTooltip();
+        }
+
+        /**
+         * Toggle tooltip visibility - used on mobile devices
+         */
+        toggleTooltip(type) {
+            // Hide all other tooltips first
+            const tooltips = ['info', 'refresh', 'minimize', 'back'];
+            tooltips.forEach(t => {
+                if (t !== type) {
+                    const methodName = `hide${t.charAt(0).toUpperCase() + t.slice(1)}Tooltip`;
+                    if (this[methodName]) {
+                        this[methodName]();
+                    }
+                }
+            });
+
+            // Toggle the requested tooltip
+            const showKey = `show${type.charAt(0).toUpperCase() + type.slice(1)}Tooltip`;
+            const isCurrentlyShown = this.state[showKey];
+
+            if (isCurrentlyShown) {
+                const methodName = `hide${type.charAt(0).toUpperCase() + type.slice(1)}Tooltip`;
+                this[methodName]();
+            } else {
+                const methodName = `show${type.charAt(0).toUpperCase() + type.slice(1)}Tooltip`;
+                this[methodName]();
             }
         }
 
@@ -1332,32 +1461,50 @@
                 this.elements.backTooltip = document.getElementById('chatbot-back-tooltip');
 
                 // Reattach header button listeners
-                document.getElementById('chatbot-minimize-btn')?.addEventListener('click', () => this.closeChat());
-                document.getElementById('chatbot-back-btn')?.addEventListener('click', () => this.switchToListView());
-                document.getElementById('chatbot-refresh-btn')?.addEventListener('click', () => this.startNewChat());
+                document.getElementById('chatbot-minimize-btn')?.addEventListener('click', () => {
+                    this.hideMinimizeTooltip();
+                    this.closeChat();
+                });
+                document.getElementById('chatbot-back-btn')?.addEventListener('click', () => {
+                    this.hideBackTooltip();
+                    this.switchToListView();
+                });
+                document.getElementById('chatbot-refresh-btn')?.addEventListener('click', () => {
+                    this.hideRefreshTooltip();
+                    this.startNewChat();
+                });
 
-                // Info button and tooltip hover handlers
+                // Info button and tooltip handlers
                 const infoWrapper = document.querySelector('.chatbot-info-wrapper');
                 if (infoWrapper) {
-                    infoWrapper.addEventListener('mouseenter', () => this.showInfoTooltip());
-                    infoWrapper.addEventListener('mouseleave', () => this.hideInfoTooltip());
+                    if (this.isTouchDevice) {
+                        // On touch devices, toggle tooltip on click
+                        infoWrapper.addEventListener('click', (e) => {
+                            e.stopPropagation();
+                            this.toggleTooltip('info');
+                        });
+                    } else {
+                        // On desktop, show on hover
+                        infoWrapper.addEventListener('mouseenter', () => this.showInfoTooltip());
+                        infoWrapper.addEventListener('mouseleave', () => this.hideInfoTooltip());
+                    }
                 }
 
-                // Refresh button and tooltip hover handlers
+                // Refresh button and tooltip handlers (desktop only)
                 const refreshWrapper = document.querySelector('.chatbot-refresh-wrapper');
                 if (refreshWrapper) {
                     refreshWrapper.addEventListener('mouseenter', () => this.showRefreshTooltip());
                     refreshWrapper.addEventListener('mouseleave', () => this.hideRefreshTooltip());
                 }
 
-                // Minimize button and tooltip hover handlers
+                // Minimize button and tooltip handlers (desktop only)
                 const minimizeWrapper = document.querySelector('.chatbot-minimize-wrapper');
                 if (minimizeWrapper) {
                     minimizeWrapper.addEventListener('mouseenter', () => this.showMinimizeTooltip());
                     minimizeWrapper.addEventListener('mouseleave', () => this.hideMinimizeTooltip());
                 }
 
-                // Back button and tooltip hover handlers
+                // Back button and tooltip handlers (desktop only)
                 const backWrapper = document.querySelector('.chatbot-back-wrapper');
                 if (backWrapper) {
                     backWrapper.addEventListener('mouseenter', () => this.showBackTooltip());
