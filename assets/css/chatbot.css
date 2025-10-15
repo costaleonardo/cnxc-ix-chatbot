@@ -930,7 +930,7 @@
     border-radius: 8px !important;
     resize: none;
     font-family: 'Montserrat';
-    font-size: 14px;
+    font-size: 16px;
     line-height: 1.5;
     max-height: 120px;
     outline: none;
@@ -1400,7 +1400,7 @@
 
     .chatbot-input {
         padding: 10px 46px 10px 16px;
-        font-size: 14px;
+        font-size: 16px;
         border-radius: 8px !important;
     }
 
@@ -1504,7 +1504,7 @@
 
     .chatbot-input {
         padding: 8px 44px 8px 14px;
-        font-size: 13px;
+        font-size: 16px;
     }
 
     .chatbot-input-footer {
