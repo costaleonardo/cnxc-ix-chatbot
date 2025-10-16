@@ -556,8 +556,21 @@
                 }
             });
             
-            // Tooltip close
-            document.querySelector('.chatbot-tooltip-close')?.addEventListener('click', () => {
+            // Tooltip click - open chatbot when clicking anywhere on tooltip
+            this.elements.tooltip?.addEventListener('click', (e) => {
+                // Don't open chat if clicking the close button
+                if (!e.target.closest('.chatbot-tooltip-close')) {
+                    this.state.showTooltip = false;
+                    this.elements.tooltip.classList.remove('show');
+                    if (!this.state.isOpen) {
+                        this.toggleChat();
+                    }
+                }
+            });
+
+            // Tooltip close button
+            document.querySelector('.chatbot-tooltip-close')?.addEventListener('click', (e) => {
+                e.stopPropagation(); // Prevent triggering tooltip click
                 this.state.showTooltip = false;
                 this.elements.tooltip.classList.remove('show');
             });

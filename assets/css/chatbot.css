@@ -86,6 +86,11 @@
     opacity: 0;
     visibility: hidden;
     transition: all 0.2s ease;
+    cursor: pointer;
+}
+
+.chatbot-tooltip:hover {
+    background: var(--chatbot-bg-hover);
 }
 
 .chatbot-tooltip.show {
@@ -1268,7 +1273,7 @@
     .chatbot-info-tooltip {
         width: calc(100vw - 64px);
         max-width: 300px;
-        right: -8px;
+        right: -60px;
         padding: 14px;
     }
 
