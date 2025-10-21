@@ -65,6 +65,14 @@
         }
 
         /**
+         * Detect if device is mobile or tablet (viewport width <= 1024px)
+         * Used to determine scroll behavior for bot responses
+         */
+        isMobileOrTablet() {
+            return window.innerWidth <= 1024;
+        }
+
+        /**
          * Lock body scroll to prevent background page scrolling on mobile
          * Preserves scroll position to prevent layout shift
          */
@@ -1050,6 +1058,13 @@
                     return false;
                 }
 
+                // Scroll behavior: Mobile/tablet shows top of message, desktop scrolls to bottom
+                if (this.isMobileOrTablet()) {
+                    this.scrollToShowMessage(messageElement);
+                } else {
+                    this.scrollToBottom();
+                }
+
                 // Animate text appearing word by word
                 const words = fullText.split(' ');
                 let accumulatedText = '';
@@ -1078,8 +1093,10 @@
                     // Update DOM with formatted content
                     textElement.innerHTML = this.formatMessage(accumulatedText);
 
-                    // Smart scroll: only scroll if user is already at bottom
-                    this.scrollToBottom();
+                    // Smart scroll: Desktop auto-scrolls during streaming, mobile/tablet doesn't
+                    if (!this.isMobileOrTablet()) {
+                        this.scrollToBottom();
+                    }
 
                     // Wait 50ms before showing next word (simulate streaming speed)
                     await new Promise(resolve => setTimeout(resolve, 50));
@@ -1094,11 +1111,17 @@
                     // Add references HTML to DOM
                     const referencesHTML = this.buildReferencesHTML(references);
                     textElement.insertAdjacentHTML('afterend', referencesHTML);
-                    this.scrollToBottom();
+
+                    // Only scroll on desktop, mobile/tablet users can scroll manually
+                    if (!this.isMobileOrTablet()) {
+                        this.scrollToBottom();
+                    }
                 }
 
-                // Do one final scroll to bottom before cleaning up
-                this.scrollToBottom();
+                // Final scroll: Desktop scrolls to bottom, mobile/tablet stays at current position
+                if (!this.isMobileOrTablet()) {
+                    this.scrollToBottom();
+                }
 
                 // Streaming finished - reset state (this will detach the scroll listener)
                 this.resetScrollState();
@@ -1166,10 +1189,19 @@
             const messageElement = document.createElement('div');
             messageElement.innerHTML = this.buildMessageHTML(message);
             const messageNode = messageElement.firstElementChild;
-            
+
             this.elements.messages.appendChild(messageNode);
-            this.scrollToBottom();
-            
+
+            // Conditional scroll: Desktop scrolls to bottom, mobile/tablet for user messages only
+            if (!this.isMobileOrTablet()) {
+                // Desktop: always scroll to bottom
+                this.scrollToBottom();
+            } else if (message.role === 'user') {
+                // Mobile/tablet: scroll to bottom for user messages to show their question
+                this.scrollToBottom();
+            }
+            // Mobile/tablet bot messages: no scroll here, handled in sendStreamingMessage()
+
             return messageNode;
         }
         
@@ -1602,6 +1634,26 @@
                 // Not streaming or forced - always scroll
                 this.elements.messages.scrollTop = this.elements.messages.scrollHeight;
             }
+        }
+
+        /**
+         * Scroll to show a specific message near the top of the viewport
+         * Used on mobile/tablet to show the start of bot responses
+         * @param {HTMLElement} messageElement - The message element to scroll to
+         */
+        scrollToShowMessage(messageElement) {
+            if (!this.elements.messages || !messageElement) return;
+
+            // Get the position of the message relative to the messages container
+            const containerRect = this.elements.messages.getBoundingClientRect();
+            const messageRect = messageElement.getBoundingClientRect();
+
+            // Calculate the offset needed to position message near top (20px margin)
+            const targetOffset = 20;
+            const scrollOffset = messageRect.top - containerRect.top + this.elements.messages.scrollTop - targetOffset;
+
+            // Smooth scroll to the message
+            this.elements.messages.scrollTop = scrollOffset;
         }
 
         /**
