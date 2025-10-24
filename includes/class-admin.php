@@ -801,10 +801,10 @@ class Hello_Chatbot_Admin {
     }
 
     /**
-     * Filter references to exclude document types and limit to top 3
+     * Filter references to exclude document types, remove duplicates, and limit to top 3
      *
      * @param array $sources Array of source objects from API
-     * @return array Filtered array with max 3 web-only sources
+     * @return array Filtered array with max 3 unique web-only sources
      */
     private function filter_references($sources) {
         if (empty($sources)) {
@@ -814,24 +814,42 @@ class Hello_Chatbot_Admin {
         // Document extensions to exclude
         $excluded_extensions = array('.pdf', '.docx', '.doc', '.pptx', '.ppt', '.xlsx', '.xls');
 
+        // Track seen URLs to prevent duplicates
+        $seen_urls = array();
         $filtered = array();
+
         foreach ($sources as $source) {
-            $path = isset($source['path']) ? strtolower($source['path']) : '';
+            $path = isset($source['path']) ? $source['path'] : '';
+            $path_lower = strtolower($path);
+
+            // Skip if path is empty
+            if (empty($path)) {
+                continue;
+            }
 
             // Skip if path contains excluded extension
             $is_excluded = false;
             foreach ($excluded_extensions as $ext) {
-                if (strpos($path, $ext) !== false) {
+                if (strpos($path_lower, $ext) !== false) {
                     $is_excluded = true;
                     break;
                 }
             }
 
-            if (!$is_excluded) {
-                $filtered[] = $source;
+            if ($is_excluded) {
+                continue;
             }
 
-            // Stop after collecting 3 valid sources
+            // Skip if we've already seen this URL (case-insensitive comparison)
+            if (in_array($path_lower, $seen_urls)) {
+                continue;
+            }
+
+            // Add to filtered results and mark URL as seen
+            $filtered[] = $source;
+            $seen_urls[] = $path_lower;
+
+            // Stop after collecting 3 unique valid sources
             if (count($filtered) >= 3) {
                 break;
             }
