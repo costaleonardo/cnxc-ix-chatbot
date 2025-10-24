@@ -48,10 +48,10 @@
 
 /* Chat Button */
 .chatbot-button {
-    width: 56px;
-    height: 56px;
-    border-radius: 28px;
-    background: var(--chatbot-primary);
+    width: 80px;
+    height: 80px;
+    border-radius: 40px;
+    background: #25E2CC;
     border: none;
     color: white;
     display: flex;
@@ -74,7 +74,7 @@
 /* Tooltip */
 .chatbot-tooltip {
     position: absolute;
-    bottom: 80px;
+    bottom: 100px;
     right: 0;
     width: 280px;
     max-width: calc(100vw - 100px);
@@ -943,6 +943,9 @@
     background: #ffffff;
     will-change: border-color, background-color;
     color: #333;
+    box-sizing: border-box;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
 }
 
 .chatbot-input::placeholder {

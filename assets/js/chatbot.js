@@ -139,8 +139,10 @@
                         this.elements.messages.innerHTML = this.buildMessagesHTML();
                     }
                     this.scrollToBottom();
-                    // Lock body scroll since widget is open
-                    this.lockBodyScroll();
+                    // Lock body scroll since widget is open (mobile/tablet only)
+                    if (this.isMobileOrTablet()) {
+                        this.lockBodyScroll();
+                    }
                 }, 100);
             }
         }
@@ -673,11 +675,15 @@
                 // Reset scroll state when opening to ensure clean state
                 this.resetScrollState();
                 this.scrollToBottom();
-                // Lock body scroll to prevent background page scrolling
-                this.lockBodyScroll();
+                // Lock body scroll to prevent background page scrolling (mobile/tablet only)
+                if (this.isMobileOrTablet()) {
+                    this.lockBodyScroll();
+                }
             } else {
                 // Unlock body scroll when closing
-                this.unlockBodyScroll();
+                if (this.isMobileOrTablet()) {
+                    this.unlockBodyScroll();
+                }
             }
         }
         
@@ -701,8 +707,10 @@
                 this.elements.button.style.display = 'block';
             }
 
-            // Unlock body scroll when closing
-            this.unlockBodyScroll();
+            // Unlock body scroll when closing (mobile/tablet only)
+            if (this.isMobileOrTablet()) {
+                this.unlockBodyScroll();
+            }
 
             // Save the closed state
             this.sessionManager.saveWidgetState(false);
