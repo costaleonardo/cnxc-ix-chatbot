@@ -992,19 +992,21 @@
                 }
             } catch (error) {
                 console.error('Chat error:', error);
-                
+
                 const errorMsg = {
                     id: 'msg-' + Date.now(),
                     role: 'assistant',
                     content: this.config.strings.error,
                     timestamp: this.getCurrentTime()
                 };
-                
+
                 this.addMessage(errorMsg);
                 this.setLoadingIndicator(false);
                 this.appendMessage(errorMsg);
             } finally {
                 this.state.isLoading = false;
+                // Update send button state when message sending completes
+                this.updateSendButtonState();
             }
         }
         
@@ -1076,11 +1078,15 @@
                 // Attach scroll listener for this streaming session
                 this.attachScrollListener();
 
+                // Update send button state when streaming starts
+                this.updateSendButtonState();
+
                 // Failsafe: Auto-reset streaming state after 30 seconds
                 // This prevents permanently stuck states if something goes wrong
                 this.scrollState.streamingTimeout = setTimeout(() => {
                     console.warn('Streaming timeout reached - auto-resetting scroll state');
                     this.resetScrollState();
+                    this.updateSendButtonState();
                 }, 30000);
 
                 for (let i = 0; i < words.length; i++) {
@@ -1127,6 +1133,10 @@
                 this.resetScrollState();
 
                 this.state.isLoading = false;
+
+                // Update send button state when streaming completes
+                this.updateSendButtonState();
+
                 return true;
 
             } catch (error) {
@@ -1135,6 +1145,8 @@
                 this.setLoadingIndicator(false);
                 // Reset streaming state on error (properly cleans up listener and timeout)
                 this.resetScrollState();
+                // Update send button state after error
+                this.updateSendButtonState();
                 return false;
             }
         }
@@ -1242,7 +1254,7 @@
          */
         setLoadingIndicator(show) {
             const existingLoader = this.elements.messages.querySelector('.chatbot-thinking');
-            
+
             if (show && !existingLoader) {
                 const loaderElement = document.createElement('div');
                 loaderElement.innerHTML = this.buildThinkingHTML();
@@ -1252,6 +1264,9 @@
             } else if (!show && existingLoader) {
                 existingLoader.remove();
             }
+
+            // Update send button state when loading state changes
+            this.updateSendButtonState();
         }
         
         /**
@@ -1407,7 +1422,10 @@
 
                     // Reattach form listeners
                     this.elements.form?.addEventListener('submit', (e) => this.handleSubmit(e));
-                    this.elements.input?.addEventListener('input', () => this.autoResizeInput());
+                    this.elements.input?.addEventListener('input', () => {
+                        this.autoResizeInput();
+                        this.updateSendButtonState();
+                    });
                     this.elements.input?.addEventListener('keydown', (e) => {
                         if (e.key === 'Enter' && !e.shiftKey) {
                             e.preventDefault();
@@ -1713,9 +1731,17 @@
             if (!sendBtn) return;
 
             const hasText = this.elements.input && this.elements.input.value.trim().length > 0;
-            if (hasText) {
+            const isBusy = this.state.isLoading || this.scrollState.isStreaming;
+
+            // Disable button when bot is thinking or streaming
+            if (isBusy) {
+                sendBtn.disabled = true;
+                sendBtn.classList.remove('enabled');
+            } else if (hasText) {
+                sendBtn.disabled = false;
                 sendBtn.classList.add('enabled');
             } else {
+                sendBtn.disabled = false;
                 sendBtn.classList.remove('enabled');
             }
         }
